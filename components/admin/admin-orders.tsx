@@ -1,0 +1,92 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { money, cn } from "@/lib/utils";
+import { ORDER_STATUSES } from "@/lib/domain/constants";
+import { PageContainer } from "@/components/app-shell";
+import { Card, CardBody } from "@/components/ui/card";
+import { Badge } from "@/components/ui/misc";
+import { Button } from "@/components/ui/button";
+import type { Order } from "@/lib/types/models";
+
+export function AdminOrders({ orders }: { orders: Order[] }) {
+  const router = useRouter();
+  const [filter, setFilter] = useState<string>("all");
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const filters = ["all", ...ORDER_STATUSES];
+  const visible = filter === "all" ? orders : orders.filter((o) => o.order_status === filter);
+
+  async function act(order: Order, action: "deliver" | "cancel") {
+    setBusy(order.id);
+    const supabase = createClient();
+    if (action === "deliver") {
+      await supabase.rpc("mark_delivered", { p_order_id: order.id });
+    } else {
+      await supabase.from("orders").update({ order_status: "cancelled" }).eq("id", order.id);
+    }
+    setBusy(null);
+    router.refresh();
+  }
+
+  return (
+    <PageContainer>
+      <h1 className="mb-4 text-2xl font-extrabold text-text">Orders</h1>
+      <div className="mb-4 flex flex-wrap gap-2">
+        {filters.map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={cn(
+              "rounded-full border px-3.5 py-1.5 text-sm capitalize",
+              filter === f ? "border-primary bg-primary text-on-primary" : "border-border bg-surface text-text-muted",
+            )}
+          >
+            {f.replace(/_/g, " ")}
+          </button>
+        ))}
+      </div>
+
+      {visible.length === 0 ? (
+        <p className="py-16 text-center text-text-faint">No orders.</p>
+      ) : (
+        <div className="space-y-3">
+          {visible.map((o) => {
+            const done = o.order_status === "delivered" || o.order_status === "cancelled";
+            return (
+              <Card key={o.id}>
+                <CardBody className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-text">{o.order_number}</span>
+                    <Badge tone={o.order_status === "delivered" ? "success" : o.order_status === "cancelled" ? "error" : "primary"}>
+                      {o.order_status.replace(/_/g, " ")}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-sm text-text-muted">
+                    Room {o.room_number}, {o.block} · {o.payment_method.toUpperCase()} ·{" "}
+                    {new Date(o.created_at).toLocaleString()}
+                  </p>
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className="font-bold text-primary">{money(o.total)}</span>
+                    {!done && (
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="ghost" onClick={() => act(o, "cancel")}>
+                          Cancel
+                        </Button>
+                        <Button size="sm" variant="success" loading={busy === o.id} onClick={() => act(o, "deliver")}>
+                          Mark delivered
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </CardBody>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </PageContainer>
+  );
+}

@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+/* =========================================================================
+   CFD Hostel Treats — light, fresh "food" theme (white + lime/green).
+   Warm accent reserved for discounts/sale.
+   ========================================================================= */
+:root {
+  --bg: #ffffff;
+  --bg-muted: #f4f8ef;
+  --surface: #ffffff;
+  --surface-muted: #f7faf2;
+  --border: #e3ead9;
+
+  --primary: #5fa80b;
+  --primary-hover: #4e8c08;
+  --primary-soft: #eaf5d8;
+  --on-primary: #ffffff;
+
+  --accent-fresh: #22c55e;
+  --accent-warm: #f97316; /* discounts / sale only */
+
+  --text: #14200a;
+  --text-muted: #5b6b4a;
+  --text-faint: #8a9a76;
+
+  --success: #16a34a;
+  --error: #dc2626;
+  --warn: #f59e0b;
+  --info: #0ea5e9;
+
+  --radius: 1rem;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-muted: var(--bg-muted);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-on-primary: var(--on-primary);
+  --color-accent-fresh: var(--accent-fresh);
+  --color-accent-warm: var(--accent-warm);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-faint: var(--text-faint);
+  --color-success: var(--success);
+  --color-error: var(--error);
+  --color-warn: var(--warn);
+  --color-info: var(--info);
+  --font-sans: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  --radius-xl: var(--radius);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-family: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d5e0c5;
+  border-radius: 999px;
+}

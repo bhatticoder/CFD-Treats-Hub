@@ -1,0 +1,91 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
+import { PageContainer } from "@/components/app-shell";
+import { Badge, EmptyState } from "@/components/ui/misc";
+import { cn } from "@/lib/utils";
+import type { Order } from "@/lib/types/models";
+
+type Filter = "all" | "pending" | "delivered";
+
+export function ManagerOrders({ orders }: { orders: Order[] }) {
+  const [filter, setFilter] = useState<Filter>("all");
+
+  // Sort by block then numeric room for an efficient delivery route.
+  const sorted = [...orders].sort((a, b) => {
+    if (a.block !== b.block) return a.block.localeCompare(b.block);
+    return (parseInt(a.room_number) || 0) - (parseInt(b.room_number) || 0);
+  });
+
+  const visible = sorted.filter((o) => {
+    if (filter === "pending")
+      return o.order_status !== "delivered" && o.order_status !== "cancelled";
+    if (filter === "delivered") return o.order_status === "delivered";
+    return true;
+  });
+
+  return (
+    <PageContainer max="max-w-4xl">
+      <h1 className="text-2xl font-extrabold text-text">Today&apos;s Orders</h1>
+      <p className="mb-4 text-sm text-text-muted">Sorted by block & room for routing</p>
+
+      <div className="mb-4 flex gap-2">
+        {(["all", "pending", "delivered"] as Filter[]).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={cn(
+              "rounded-full border px-4 py-1.5 text-sm capitalize",
+              filter === f
+                ? "border-primary bg-primary text-on-primary"
+                : "border-border bg-surface text-text-muted",
+            )}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
+
+      {visible.length === 0 ? (
+        <EmptyState title="No orders" />
+      ) : (
+        <div className="space-y-3">
+          {visible.map((o) => {
+            const pending =
+              o.order_status !== "delivered" && o.order_status !== "cancelled";
+            return (
+              <Link
+                key={o.id}
+                href={`/manager/orders/${o.id}`}
+                className={cn(
+                  "flex items-center justify-between rounded-2xl border bg-surface p-4 transition-colors hover:bg-bg-muted",
+                  pending ? "border-primary/40" : "border-border",
+                )}
+              >
+                <div>
+                  <p className="font-bold text-text">
+                    Room {o.room_number}, {o.block}
+                  </p>
+                  <p className="text-sm text-text-muted">{o.order_number}</p>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <Badge tone={o.payment_method === "cod" ? "warn" : "success"}>
+                      {o.payment_method === "cod" ? "COD" : "Paid"}
+                    </Badge>
+                    <Badge
+                      tone={o.order_status === "delivered" ? "success" : "primary"}
+                    >
+                      {o.order_status.replace(/_/g, " ")}
+                    </Badge>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-text-faint" />
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </PageContainer>
+  );
+}
