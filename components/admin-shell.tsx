@@ -11,11 +11,15 @@ import {
   BarChart3,
   GraduationCap,
   Palette,
+  Store,
+  ClipboardList,
 } from "lucide-react";
 import { AppShell, type NavItem } from "@/components/app-shell";
 
 const items: NavItem[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { href: "/admin/preorders", label: "Pre-orders", icon: ClipboardList },
+  { href: "/admin/restaurants", label: "Restaurants", icon: Store },
   { href: "/admin/inventory", label: "Inventory", icon: Package },
   { href: "/admin/orders", label: "Orders", icon: ReceiptText },
   { href: "/admin/managers", label: "Managers", icon: Users },
@@ -27,9 +31,17 @@ const items: NavItem[] = [
   { href: "/admin/branding", label: "Branding", icon: Palette },
 ];
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
+export function AdminShell({
+  children,
+  logoUrl,
+  themeColor,
+}: {
+  children: React.ReactNode;
+  logoUrl?: string | null;
+  themeColor?: string | null;
+}) {
   return (
-    <AppShell items={items} brand="Admin Panel">
+    <AppShell items={items} brand="Admin Panel" logoUrl={logoUrl} themeColor={themeColor}>
       {children}
     </AppShell>
   );

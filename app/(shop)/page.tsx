@@ -22,6 +22,7 @@ export default async function MenuPage() {
     .from("items")
     .select("*")
     .eq("campus_id", campusId ?? "")
+    .eq("is_preorder", false)
     .order("category")
     .order("name");
 

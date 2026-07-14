@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Switch, Badge } from "@/components/ui/misc";
 import { Modal } from "@/components/ui/modal";
-import type { Item } from "@/lib/types/models";
+import type { Item, Restaurant } from "@/lib/types/models";
 
 type Draft = {
   name: string;
@@ -23,6 +23,9 @@ type Draft = {
   category: string;
   custom_instruction: string;
   is_available: boolean;
+  restaurant_id: string;
+  expected_arrival: string;
+  is_preorder: boolean;
 };
 
 const empty: Draft = {
@@ -34,9 +37,20 @@ const empty: Draft = {
   category: "Snacks",
   custom_instruction: "",
   is_available: true,
+  restaurant_id: "",
+  expected_arrival: "",
+  is_preorder: false,
 };
 
-export function InventoryManager({ items, campusId }: { items: Item[]; campusId: string }) {
+export function InventoryManager({
+  items,
+  restaurants,
+  campusId,
+}: {
+  items: Item[];
+  restaurants: Restaurant[];
+  campusId: string;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Item | null>(null);
@@ -65,6 +79,9 @@ export function InventoryManager({ items, campusId }: { items: Item[]; campusId:
       category: item.category,
       custom_instruction: item.custom_instruction ?? "",
       is_available: item.is_available,
+      restaurant_id: item.restaurant_id ?? "",
+      expected_arrival: item.expected_arrival ?? "",
+      is_preorder: item.is_preorder,
     });
     setFile(null);
     setPreview(item.image_url ?? null);
@@ -98,6 +115,9 @@ export function InventoryManager({ items, campusId }: { items: Item[]; campusId:
         is_available: draft.is_available,
         image_url: imageUrl,
         campus_id: campusId,
+        restaurant_id: draft.restaurant_id || null,
+        expected_arrival: draft.expected_arrival.trim() || null,
+        is_preorder: draft.is_preorder,
       };
       const { error } = editing
         ? await supabase.from("items").update(payload).eq("id", editing.id)
@@ -235,6 +255,28 @@ export function InventoryManager({ items, campusId }: { items: Item[]; campusId:
               </Select>
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Restaurant</Label>
+              <Select
+                value={draft.restaurant_id}
+                onChange={(e) => setDraft({ ...draft, restaurant_id: e.target.value })}
+              >
+                <option value="">None</option>
+                {restaurants.map((r) => (
+                  <option key={r.id} value={r.id}>{r.name}</option>
+                ))}
+              </Select>
+            </div>
+            <div>
+              <Label>Expected arrival</Label>
+              <Input
+                placeholder="e.g. 9:30 PM"
+                value={draft.expected_arrival}
+                onChange={(e) => setDraft({ ...draft, expected_arrival: e.target.value })}
+              />
+            </div>
+          </div>
           <div>
             <Label>Custom instruction (for rider)</Label>
             <Textarea
@@ -245,6 +287,13 @@ export function InventoryManager({ items, campusId }: { items: Item[]; campusId:
           <div className="flex items-center justify-between">
             <span className="text-sm text-text">Available to customers</span>
             <Switch checked={draft.is_available} onChange={(v) => setDraft({ ...draft, is_available: v })} />
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm text-text">Pre-order item</span>
+              <p className="text-xs text-text-faint">Shown on the pre-order page (no stock needed)</p>
+            </div>
+            <Switch checked={draft.is_preorder} onChange={(v) => setDraft({ ...draft, is_preorder: v })} />
           </div>
           {error && <p className="text-sm text-error">{error}</p>}
         </div>

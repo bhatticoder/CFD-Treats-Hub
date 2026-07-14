@@ -24,13 +24,29 @@ export function AppShell({
   items,
   brand,
   children,
+  logoUrl,
+  themeColor,
 }: {
   items: NavItem[];
   brand: string;
   children: React.ReactNode;
+  logoUrl?: string | null;
+  themeColor?: string | null;
 }) {
   const pathname = usePathname();
   const router = useRouter();
+
+  // Apply the campus's configured theme colour live (Brief §5.4).
+  React.useEffect(() => {
+    if (themeColor && /^#[0-9a-fA-F]{6}$/.test(themeColor)) {
+      document.documentElement.style.setProperty("--primary", themeColor);
+      document.documentElement.style.setProperty("--primary-hover", themeColor);
+    }
+    return () => {
+      document.documentElement.style.removeProperty("--primary");
+      document.documentElement.style.removeProperty("--primary-hover");
+    };
+  }, [themeColor]);
 
   async function logout() {
     await createClient().auth.signOut();
@@ -38,14 +54,21 @@ export function AppShell({
     router.refresh();
   }
 
+  const brandMark = logoUrl ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={logoUrl} alt="" className="h-10 w-10 rounded-xl object-cover" />
+  ) : (
+    <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary text-lg font-black text-on-primary">
+      🍔
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-bg-muted md:flex">
       {/* Sidebar (desktop) */}
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border bg-surface md:flex">
         <div className="flex items-center gap-3 px-6 py-5">
-          <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary text-lg font-black text-on-primary">
-            🍔
-          </div>
+          {brandMark}
           <div>
             <p className="text-sm font-bold leading-tight text-text">{brand}</p>
             <p className="text-xs text-text-faint">CFD Hostel Treats</p>
@@ -91,7 +114,7 @@ export function AppShell({
 
       {/* Bottom nav (mobile) */}
       <nav className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-around border-t border-border bg-surface px-2 py-1.5 md:hidden">
-        {items.slice(0, 5).map((it) => {
+        {items.slice(0, 6).map((it) => {
           const active = isActive(pathname, it);
           const Icon = it.icon;
           return (

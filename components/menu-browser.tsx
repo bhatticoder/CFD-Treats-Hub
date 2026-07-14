@@ -150,6 +150,9 @@ function ItemCard({ item, enabled }: { item: Item; enabled: boolean }) {
             </span>
           )}
         </div>
+        {item.expected_arrival && (
+          <p className="mt-0.5 text-xs text-text-faint">🕒 ETA {item.expected_arrival}</p>
+        )}
         <button
           disabled={soldOut}
           onClick={onAdd}

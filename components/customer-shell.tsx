@@ -1,11 +1,19 @@
 "use client";
 
-import { Home, ShoppingCart, ReceiptText, Bell, User } from "lucide-react";
+import { Home, ShoppingCart, ReceiptText, Bell, User, CalendarClock } from "lucide-react";
 import { AppShell, type NavItem } from "@/components/app-shell";
 import { useCart } from "@/lib/store/cart";
 import { useEffect, useState } from "react";
 
-export function CustomerShell({ children }: { children: React.ReactNode }) {
+export function CustomerShell({
+  children,
+  logoUrl,
+  themeColor,
+}: {
+  children: React.ReactNode;
+  logoUrl?: string | null;
+  themeColor?: string | null;
+}) {
   const lines = useCart((s) => s.lines);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -13,6 +21,7 @@ export function CustomerShell({ children }: { children: React.ReactNode }) {
 
   const items: NavItem[] = [
     { href: "/", label: "Home", icon: Home, exact: true },
+    { href: "/preorder", label: "Pre-order", icon: CalendarClock },
     { href: "/cart", label: "Cart", icon: ShoppingCart, badge: count || undefined },
     { href: "/orders", label: "Orders", icon: ReceiptText },
     { href: "/notifications", label: "Alerts", icon: Bell },
@@ -20,7 +29,7 @@ export function CustomerShell({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <AppShell items={items} brand="CFD Treats">
+    <AppShell items={items} brand="CFD Treats" logoUrl={logoUrl} themeColor={themeColor}>
       {children}
     </AppShell>
   );

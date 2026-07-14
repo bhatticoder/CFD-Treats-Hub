@@ -14,6 +14,7 @@ export function Branding({ campus }: { campus: Campus }) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(campus?.logo_url ?? null);
   const [color, setColor] = useState(campus?.theme_color ?? "");
+  const [account, setAccount] = useState(campus?.payment_account_info ?? "");
   const [codCap, setCodCap] = useState(String(campus?.cod_cap_percent ?? 100));
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -25,6 +26,7 @@ export function Branding({ campus }: { campus: Campus }) {
     try {
       const payload: Record<string, unknown> = {
         theme_color: color.trim() || null,
+        payment_account_info: account.trim() || null,
         cod_cap_percent: Math.min(100, Math.max(0, Number(codCap) || 100)),
       };
       if (file) {
@@ -77,6 +79,14 @@ export function Branding({ campus }: { campus: Campus }) {
           <div>
             <Label>Theme colour (hex)</Label>
             <Input value={color} onChange={(e) => setColor(e.target.value)} placeholder="#5FA80B" />
+          </div>
+          <div>
+            <Label>Payment account (shown to customers at checkout)</Label>
+            <Input
+              value={account}
+              onChange={(e) => setAccount(e.target.value)}
+              placeholder="JazzCash 0300-1234567 (Muhammad Asaad)"
+            />
           </div>
           <div>
             <Label>COD cap (% of nightly orders)</Label>

@@ -25,6 +25,7 @@ export default function CartPage() {
   const [method, setMethod] = useState<"online" | "cod">("online");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [account, setAccount] = useState<string | null>(null);
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,11 +36,13 @@ export default function CartPage() {
       if (!userData.user) return;
       const { data } = await supabase
         .from("profiles")
-        .select("room_number, block")
+        .select("room_number, block, campuses(payment_account_info)")
         .eq("id", userData.user.id)
         .maybeSingle();
       if (data?.room_number) setRoom(data.room_number);
       if (data?.block) setBlock(data.block);
+      const campus = data?.campuses as { payment_account_info?: string } | null;
+      if (campus?.payment_account_info) setAccount(campus.payment_account_info);
     })();
   }, []);
 
@@ -197,6 +200,13 @@ export default function CartPage() {
               ))}
             </div>
           </div>
+
+          {method === "online" && account && (
+            <div className="rounded-xl bg-primary-soft/60 p-3 text-sm">
+              <p className="font-semibold text-text">Pay to:</p>
+              <p className="text-text-muted">{account}</p>
+            </div>
+          )}
 
           {method === "online" && (
             <div>

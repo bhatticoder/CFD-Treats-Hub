@@ -1,32 +1,32 @@
 @import "tailwindcss";
 
 /* =========================================================================
-   CFD Hostel Treats — light, fresh "food" theme (white + lime/green).
-   Warm accent reserved for discounts/sale.
+   CFD Hostel Treats — warm "party-vibe" theme (dark brown + orange + cream).
+   Green reserved for "open / success"; red-orange for sale tags.
    ========================================================================= */
 :root {
-  --bg: #ffffff;
-  --bg-muted: #f4f8ef;
-  --surface: #ffffff;
-  --surface-muted: #f7faf2;
-  --border: #e3ead9;
+  --bg: #241310;          /* deep roasted brown */
+  --bg-muted: #2c1913;
+  --surface: #33201a;     /* card brown */
+  --surface-muted: #2a1712;
+  --border: #573721;      /* warm brown border */
 
-  --primary: #5fa80b;
-  --primary-hover: #4e8c08;
-  --primary-soft: #eaf5d8;
+  --primary: #e8863c;     /* brand orange */
+  --primary-hover: #d2732c;
+  --primary-soft: #3e2417; /* dark tint behind orange text/chips */
   --on-primary: #ffffff;
 
-  --accent-fresh: #22c55e;
-  --accent-warm: #f97316; /* discounts / sale only */
+  --accent-fresh: #2e9e4b; /* "OPEN NOW" green */
+  --accent-warm: #e85d2c;  /* sale / discount red-orange */
 
-  --text: #14200a;
-  --text-muted: #5b6b4a;
-  --text-faint: #8a9a76;
+  --text: #f6e7d5;        /* cream */
+  --text-muted: #c9af97;
+  --text-faint: #9b7e67;
 
-  --success: #16a34a;
-  --error: #dc2626;
-  --warn: #f59e0b;
-  --info: #0ea5e9;
+  --success: #2e9e4b;
+  --error: #e5533d;
+  --warn: #e8a33c;
+  --info: #4aa3c9;
 
   --radius: 1rem;
 }
@@ -74,6 +74,6 @@ body {
   height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d5e0c5;
+  background: #573721;
   border-radius: 999px;
 }

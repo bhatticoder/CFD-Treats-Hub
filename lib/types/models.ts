@@ -8,6 +8,7 @@ export interface Campus {
   gender: "Male" | "Female" | null;
   logo_url: string | null;
   theme_color: string | null;
+  payment_account_info: string | null;
   cod_cap_percent: number;
   manager_discount_enabled: boolean;
   shift_active: boolean;
@@ -31,6 +32,14 @@ export interface Profile {
   campus_name?: string | null;
 }
 
+export interface Restaurant {
+  id: string;
+  campus_id: string;
+  name: string;
+  is_active: boolean;
+  created_at: string;
+}
+
 export interface Item {
   id: string;
   campus_id: string;
@@ -45,7 +54,12 @@ export interface Item {
   is_available: boolean;
   custom_instruction: string | null;
   tag: string | null;
+  restaurant_id: string | null;
+  expected_arrival: string | null;
+  is_preorder: boolean;
   created_at: string;
+  // joined
+  restaurants?: { name: string } | null;
 }
 
 export interface OrderItem {
@@ -81,6 +95,7 @@ export interface Order {
   total: number;
   promo_code: string | null;
   rating: number | null;
+  is_preorder: boolean;
   created_at: string;
   delivered_at: string | null;
   order_items?: OrderItem[];
