@@ -4,7 +4,9 @@ import { useRef, useState } from "react";
 import { Check, ChevronsRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-/** Slide-to-verify human check (replaces the Flutter SliderCaptcha). */
+/** Slide-to-verify human check. Touch-smooth: touch-action none stops the page
+ *  scrolling while dragging, and completion triggers at 88% so it's easy to hit
+ *  on a phone. */
 export function HumanCheck({ onVerified }: { onVerified: () => void }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [x, setX] = useState(0);
@@ -17,17 +19,18 @@ export function HumanCheck({ onVerified }: { onVerified: () => void }) {
     return track.clientWidth - 44; // handle width
   }
 
-  function move(clientX: number) {
-    if (done || !dragging.current) return;
+  function moveTo(clientX: number) {
+    if (done) return;
     const track = trackRef.current;
     if (!track) return;
     const rect = track.getBoundingClientRect();
-    const nx = Math.min(Math.max(0, clientX - rect.left - 22), maxX());
+    const max = maxX();
+    const nx = Math.min(Math.max(0, clientX - rect.left - 22), max);
     setX(nx);
-    if (nx >= maxX() - 4) {
+    if (max > 0 && nx >= max * 0.88) {
       setDone(true);
       dragging.current = false;
-      setX(maxX());
+      setX(max);
       onVerified();
     }
   }
@@ -36,15 +39,28 @@ export function HumanCheck({ onVerified }: { onVerified: () => void }) {
     <div
       ref={trackRef}
       className={cn(
-        "relative h-11 w-full select-none overflow-hidden rounded-xl border text-sm",
+        "relative h-12 w-full touch-none select-none overflow-hidden rounded-xl border text-sm",
         done ? "border-success bg-success/10" : "border-border bg-bg-muted",
       )}
+      onPointerMove={(e) => {
+        if (dragging.current) moveTo(e.clientX);
+      }}
+      onPointerUp={() => {
+        dragging.current = false;
+        if (!done) setX(0);
+      }}
+      onPointerLeave={() => {
+        if (!done) {
+          dragging.current = false;
+          setX(0);
+        }
+      }}
     >
-      <div className="absolute inset-0 grid place-items-center text-text-faint">
+      <div className="pointer-events-none absolute inset-0 grid place-items-center text-text-faint">
         {done ? (
-          <span className="font-medium text-success">Verified</span>
+          <span className="font-medium text-success">Verified ✓</span>
         ) : (
-          "Slide to verify you're human"
+          "Slide to verify you're human →"
         )}
       </div>
       <div
@@ -55,11 +71,14 @@ export function HumanCheck({ onVerified }: { onVerified: () => void }) {
         onPointerDown={(e) => {
           if (done) return;
           dragging.current = true;
-          (e.target as HTMLElement).setPointerCapture(e.pointerId);
+          (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
         }}
-        onPointerMove={(e) => move(e.clientX)}
-        onPointerUp={() => {
+        onPointerMove={(e) => {
+          if (dragging.current) moveTo(e.clientX);
+        }}
+        onPointerUp={(e) => {
           dragging.current = false;
+          (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
           if (!done) setX(0);
         }}
         onKeyDown={(e) => {
@@ -69,9 +88,9 @@ export function HumanCheck({ onVerified }: { onVerified: () => void }) {
             onVerified();
           }
         }}
-        style={{ transform: `translateX(${x}px)` }}
+        style={{ transform: `translateX(${x}px)`, touchAction: "none" }}
         className={cn(
-          "absolute top-0.5 left-0.5 grid h-10 w-10 cursor-grab place-items-center rounded-lg text-white shadow active:cursor-grabbing",
+          "absolute top-1 left-1 grid h-10 w-10 cursor-grab touch-none place-items-center rounded-lg text-white shadow active:cursor-grabbing",
           done ? "bg-success" : "bg-primary",
         )}
       >

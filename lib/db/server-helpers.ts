@@ -1,30 +1,44 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { Campus, Profile } from "@/lib/types/models";
 
-/** The current user's profile (server-side). null if not signed in / no row. */
-export async function myProfile(): Promise<Profile | null> {
+// `cache()` dedupes within a single request/render: the layout AND the page can
+// both call these and the network work happens only once per navigation.
+
+/** The current auth user (validated). Cached per request. */
+export const currentUser = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .maybeSingle();
-  return (data as Profile) ?? null;
-}
+  return user;
+});
 
-/** The current user's campus (for live branding). */
-export async function myCampus(): Promise<Campus | null> {
-  const profile = await myProfile();
-  if (!profile?.campus_id) return null;
+/** The current user's profile joined with its campus, in ONE query. Cached. */
+export const myProfileWithCampus = cache(async (): Promise<
+  (Profile & { campus?: Campus | null }) | null
+> => {
+  const user = await currentUser();
+  if (!user) return null;
   const supabase = await createClient();
   const { data } = await supabase
-    .from("campuses")
-    .select("*")
-    .eq("id", profile.campus_id)
+    .from("profiles")
+    .select("*, campuses(*)")
+    .eq("id", user.id)
     .maybeSingle();
-  return (data as Campus) ?? null;
-}
+  if (!data) return null;
+  const row = data as Profile & { campuses?: Campus | null };
+  return { ...row, campus: row.campuses ?? null };
+});
+
+/** The current user's profile (server-side). Cached. */
+export const myProfile = cache(async (): Promise<Profile | null> => {
+  const p = await myProfileWithCampus();
+  return p ?? null;
+});
+
+/** The current user's campus (for live branding). Cached. */
+export const myCampus = cache(async (): Promise<Campus | null> => {
+  const p = await myProfileWithCampus();
+  return p?.campus ?? null;
+});
