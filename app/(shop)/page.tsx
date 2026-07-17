@@ -20,11 +20,19 @@ export default async function MenuPage() {
 
   const { data: items } = await supabase
     .from("items")
-    .select("*")
+    .select("*, restaurants(name)")
     .eq("campus_id", campusId ?? "")
     .eq("is_preorder", false)
     .order("category")
     .order("name");
+
+  // Are there any pre-order items open right now for this campus?
+  const { count: preorderCount } = await supabase
+    .from("items")
+    .select("id", { count: "exact", head: true })
+    .eq("campus_id", campusId ?? "")
+    .eq("is_preorder", true)
+    .eq("is_available", true);
 
   const firstName = p?.full_name?.split(" ")[0] ?? "there";
 
@@ -32,6 +40,7 @@ export default async function MenuPage() {
     <MenuBrowser
       items={(items as Item[]) ?? []}
       shiftActive={shiftActive}
+      preordersOpen={(preorderCount ?? 0) > 0}
       firstName={firstName}
       campusName={p?.campuses?.name ?? "CFD Campus"}
     />

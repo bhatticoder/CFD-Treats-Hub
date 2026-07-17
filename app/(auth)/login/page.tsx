@@ -44,7 +44,7 @@ export default function LoginPage() {
           <img
             src="/logo.png"
             alt="CFD Hostel Treats"
-            className="mx-auto mb-3 h-20 w-20 rounded-2xl object-cover shadow-sm"
+            className="mx-auto mb-3 h-40 w-40 rounded-2xl object-contain"
           />
           <h1 className="text-2xl font-extrabold text-text">CFD Hostel Treats</h1>
           <p className="text-sm italic text-primary">– Cravings Fulfilled Daily –</p>

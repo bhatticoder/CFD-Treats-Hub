@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { Moon, Plus, Check } from "lucide-react";
+import { Moon, Plus, Check, CalendarClock, Store } from "lucide-react";
 import { CATEGORIES } from "@/lib/domain/constants";
 import { money, cn } from "@/lib/utils";
 import { useCart } from "@/lib/store/cart";
@@ -12,19 +13,37 @@ import type { Item } from "@/lib/types/models";
 export function MenuBrowser({
   items,
   shiftActive,
+  preordersOpen,
   firstName,
   campusName,
 }: {
   items: Item[];
   shiftActive: boolean;
+  preordersOpen: boolean;
   firstName: string;
   campusName: string;
 }) {
   const [category, setCategory] = useState<string>("All");
+  const [restaurant, setRestaurant] = useState<string>("All");
 
+  // Distinct restaurants present in this campus's items.
+  const restaurants = useMemo(() => {
+    const set = new Set<string>();
+    items.forEach((i) => {
+      if (i.restaurants?.name) set.add(i.restaurants.name);
+    });
+    return ["All", ...Array.from(set).sort()];
+  }, [items]);
+
+  // Category and restaurant filters combine (both can be active at once).
   const visible = useMemo(
-    () => (category === "All" ? items : items.filter((i) => i.category === category)),
-    [items, category],
+    () =>
+      items.filter(
+        (i) =>
+          (category === "All" || i.category === category) &&
+          (restaurant === "All" || i.restaurants?.name === restaurant),
+      ),
+    [items, category, restaurant],
   );
 
   return (
@@ -37,6 +56,20 @@ export function MenuBrowser({
           <p className="text-sm text-text-muted">{campusName}</p>
         </div>
       </div>
+
+      {preordersOpen && (
+        <div className="mb-5 rounded-2xl border border-primary/50 bg-primary-soft/50 p-5 text-center">
+          <p className="text-lg font-extrabold text-primary">
+            Pre-Orders Open, Order Now! 👇🏻👇🏻
+          </p>
+          <Link
+            href="/preorder"
+            className="mt-3 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-semibold text-on-primary hover:bg-primary-hover"
+          >
+            <CalendarClock className="h-5 w-5" /> Go to Pre-orders
+          </Link>
+        </div>
+      )}
 
       {!shiftActive && (
         <div className="mb-5 flex items-center gap-3 rounded-2xl border border-error/40 bg-error/5 p-5">
@@ -51,7 +84,7 @@ export function MenuBrowser({
       )}
 
       {/* Category tabs */}
-      <div className="mb-5 flex flex-wrap gap-2">
+      <div className="mb-3 flex flex-wrap gap-2">
         {CATEGORIES.map((c) => (
           <button
             key={c}
@@ -67,6 +100,27 @@ export function MenuBrowser({
           </button>
         ))}
       </div>
+
+      {/* Restaurant tabs (combine with categories) */}
+      {restaurants.length > 1 && (
+        <div className="mb-5 flex flex-wrap gap-2">
+          {restaurants.map((r) => (
+            <button
+              key={r}
+              onClick={() => setRestaurant(r)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm transition-colors",
+                restaurant === r
+                  ? "border-accent-warm bg-accent-warm text-white"
+                  : "border-border bg-surface text-text-muted hover:bg-bg-muted",
+              )}
+            >
+              {r !== "All" && <Store className="h-3.5 w-3.5" />}
+              {r}
+            </button>
+          ))}
+        </div>
+      )}
 
       {visible.length === 0 ? (
         <p className="py-20 text-center text-text-faint">No items here yet.</p>

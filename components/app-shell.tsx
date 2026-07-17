@@ -62,7 +62,7 @@ export function AppShell({
     <img
       src={logoUrl || "/logo.png"}
       alt=""
-      className="h-10 w-10 rounded-xl object-cover"
+      className="h-16 w-16 rounded-xl object-contain"
     />
   );
 
@@ -128,7 +128,7 @@ export function AppShell({
         {/* Top bar (mobile) */}
         <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-surface px-4 py-3 md:hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={logoUrl || "/logo.png"} alt="" className="h-8 w-8 rounded-lg object-cover" />
+          <img src={logoUrl || "/logo.png"} alt="" className="h-12 w-12 rounded-lg object-contain" />
           <p className="flex-1 font-bold text-text">{brand}</p>
           <button
             aria-label="Open menu"
