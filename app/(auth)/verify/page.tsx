@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardBody } from "@/components/ui/card";
 
+// Supabase Email OTP length (Auth → Providers → Email → "Email OTP length").
+// Keep this in sync with that setting.
+const OTP_LENGTH = 8;
+
 function VerifyInner() {
   const router = useRouter();
   const params = useSearchParams();
@@ -17,7 +21,8 @@ function VerifyInner() {
   const [error, setError] = useState<string | null>(null);
 
   async function verify() {
-    if (code.trim().length !== 6) return setError("Enter the 6-digit code");
+    if (!/^\d{6,10}$/.test(code.trim()))
+      return setError(`Enter the ${OTP_LENGTH}-digit code from your email`);
     setError(null);
     setLoading(true);
     const supabase = createClient();
@@ -52,20 +57,20 @@ function VerifyInner() {
         <p className="text-sm font-semibold text-primary">{email}</p>
         <p className="mt-2 text-xs text-text-faint">
           Open the email in this same browser and tap the link. If your email
-          shows a 6-digit code instead, enter it below.
+          shows a code instead, enter it below.
         </p>
 
         <Input
-          className="mt-5 text-center text-2xl tracking-[0.5em]"
+          className="mt-5 text-center text-2xl tracking-[0.4em]"
           inputMode="numeric"
-          maxLength={6}
+          maxLength={OTP_LENGTH}
           value={code}
           onChange={(e) => {
-            const v = e.target.value.replace(/\D/g, "").slice(0, 6);
+            const v = e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH);
             setCode(v);
-            if (v.length === 6) setTimeout(verify, 50);
+            if (v.length === OTP_LENGTH) setTimeout(verify, 50);
           }}
-          placeholder="••••••"
+          placeholder={"•".repeat(OTP_LENGTH)}
         />
 
         {error && <p className="mt-3 text-sm text-error">{error}</p>}
