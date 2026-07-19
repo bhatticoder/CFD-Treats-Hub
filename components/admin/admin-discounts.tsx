@@ -20,10 +20,25 @@ export function AdminDiscounts({ campus, items }: { campus: Campus; items: Item[
   const [message, setMessage] = useState("");
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
+  // Optimistic local state so the switch flips instantly (the DB write +
+  // server refresh round-trips to Tokyo and would otherwise feel frozen).
+  const [managerDiscount, setManagerDiscount] = useState(
+    campus?.manager_discount_enabled ?? false,
+  );
+  const [toggleErr, setToggleErr] = useState<string | null>(null);
 
   async function toggleManagerDiscount(v: boolean) {
-    await createClient().from("campuses").update({ manager_discount_enabled: v }).eq("id", campus.id);
-    router.refresh();
+    if (!campus?.id) return setToggleErr("No campus assigned to this admin");
+    setManagerDiscount(v); // optimistic
+    setToggleErr(null);
+    const { error } = await createClient()
+      .from("campuses")
+      .update({ manager_discount_enabled: v })
+      .eq("id", campus.id);
+    if (error) {
+      setManagerDiscount(!v); // revert
+      setToggleErr(error.message);
+    }
   }
 
   async function setDiscount(item: Item, value: number | null) {
@@ -53,8 +68,9 @@ export function AdminDiscounts({ campus, items }: { campus: Campus; items: Item[
           <div>
             <p className="font-semibold text-text">Allow managers to set discounts</p>
             <p className="text-sm text-text-muted">When off, only you can apply discounts.</p>
+            {toggleErr && <p className="mt-1 text-xs text-error">{toggleErr}</p>}
           </div>
-          <Switch checked={campus?.manager_discount_enabled ?? false} onChange={toggleManagerDiscount} />
+          <Switch checked={managerDiscount} onChange={toggleManagerDiscount} />
         </CardBody>
       </Card>
 
