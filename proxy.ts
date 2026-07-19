@@ -62,10 +62,16 @@ export async function proxy(request: NextRequest) {
   if (!profile) {
     return path === "/register" ? response : redirect(request, "/register");
   }
-  // Deactivated account → sign out.
+  // Deactivated account → end the session for real. signOut()'s cleared cookies
+  // don't survive onto a fresh redirect response, so clear them explicitly.
   if (profile.is_active === false) {
-    await supabase.auth.signOut();
-    return redirect(request, "/login");
+    const res = redirect(request, "/login?reason=deactivated");
+    for (const c of request.cookies.getAll()) {
+      if (c.name.startsWith("sb-") && c.name.includes("-auth-token")) {
+        res.cookies.set(c.name, "", { maxAge: 0, path: "/" });
+      }
+    }
+    return res;
   }
 
   const role = profile.role as Role;

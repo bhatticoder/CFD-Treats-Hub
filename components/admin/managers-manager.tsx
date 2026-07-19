@@ -46,8 +46,15 @@ export function ManagersManager({
   }
 
   async function deactivate(m: Profile) {
-    if (!confirm(`Remove ${m.full_name ?? m.email}?`)) return;
-    await createClient().from("profiles").update({ is_active: false }).eq("id", m.id);
+    if (!confirm(`Remove ${m.full_name ?? m.email}? They will be signed out and blocked from logging in.`)) return;
+    const { error } = await createClient()
+      .from("profiles")
+      .update({ is_active: false })
+      .eq("id", m.id);
+    if (error) {
+      alert(`Could not remove: ${error.message}`);
+      return;
+    }
     router.refresh();
   }
 
