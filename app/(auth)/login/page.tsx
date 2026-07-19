@@ -76,7 +76,7 @@ export default function LoginPage() {
           Send login code
         </Button>
         <p className="mt-4 text-center text-xs text-text-faint">
-          We&apos;ll email you a 6-digit code. New here? The same code registers you.
+          We&apos;ll email you a sign-in code. New here? The same code registers you.
         </p>
       </CardBody>
     </Card>

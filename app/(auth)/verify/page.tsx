@@ -17,6 +17,7 @@ function VerifyInner() {
   const email = params.get("email") ?? "";
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const [resending, setResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,11 +32,29 @@ function VerifyInner() {
       token: code.trim(),
       type: "email",
     });
-    setLoading(false);
-    if (error) return setError(error.message);
-    // Proxy routes to the role home, or to /register if no profile yet.
+    if (error) {
+      setLoading(false);
+      return setError(error.message);
+    }
+    // Success — keep a full-screen loader up while the proxy resolves the role
+    // and routes to the dashboard (this hop can take a few seconds).
+    setRedirecting(true);
     router.replace("/");
     router.refresh();
+  }
+
+  if (redirecting) {
+    return (
+      <Card>
+        <CardBody className="flex flex-col items-center gap-4 p-12 text-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="" className="h-20 w-20 rounded-2xl object-contain" />
+          <span className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="font-semibold text-text">Signing you in…</p>
+          <p className="text-sm text-text-muted">Setting up your dashboard.</p>
+        </CardBody>
+      </Card>
+    );
   }
 
   async function resend() {
