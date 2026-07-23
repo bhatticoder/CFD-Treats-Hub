@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
+import { Plus, Minus, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { money } from "@/lib/utils";
 import { CATEGORIES } from "@/lib/domain/constants";
@@ -171,12 +171,10 @@ export function InventoryManager({
                     {item.name}
                     {!item.is_available && <Badge tone="error">Hidden</Badge>}
                   </p>
-                  <p className="text-sm">
+                  <div className="mt-1 flex flex-wrap items-center gap-3">
                     <span className="font-bold text-primary">{money(item.price)}</span>
-                    <span className={`ml-3 ${item.stock_quantity <= 5 ? "text-error" : "text-text-muted"}`}>
-                      Stock: {item.stock_quantity}
-                    </span>
-                  </p>
+                    <StockCell item={item} />
+                  </div>
                 </div>
                 <button onClick={() => toggle(item)} title="Toggle visibility" className="p-2 text-text-muted">
                   {item.is_available ? <Eye className="h-5 w-5 text-success" /> : <EyeOff className="h-5 w-5" />}
@@ -299,5 +297,54 @@ export function InventoryManager({
         </div>
       </Modal>
     </PageContainer>
+  );
+}
+
+/** Inline stock editor — update stock in one click, no dialog / no reupload. */
+function StockCell({ item }: { item: Item }) {
+  const [stock, setStock] = useState(item.stock_quantity);
+  const [saving, setSaving] = useState(false);
+
+  async function persist(v: number) {
+    const nv = Math.max(0, Math.floor(v || 0));
+    setStock(nv);
+    setSaving(true);
+    await createClient().from("items").update({ stock_quantity: nv }).eq("id", item.id);
+    setSaving(false);
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      <span className="mr-1 text-xs text-text-muted">Stock</span>
+      <button
+        onClick={() => persist(stock - 1)}
+        className="grid h-6 w-6 place-items-center rounded-md border border-border text-primary hover:bg-bg-muted"
+        aria-label="Decrease stock"
+      >
+        <Minus className="h-3.5 w-3.5" />
+      </button>
+      <input
+        value={stock}
+        inputMode="numeric"
+        onChange={(e) => setStock(Number(e.target.value.replace(/\D/g, "")) || 0)}
+        onBlur={() => persist(stock)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+        }}
+        className={`h-6 w-12 rounded-md border border-border bg-surface text-center text-sm ${
+          stock <= 5 ? "text-error" : "text-text"
+        }`}
+      />
+      <button
+        onClick={() => persist(stock + 1)}
+        className="grid h-6 w-6 place-items-center rounded-md border border-border text-primary hover:bg-bg-muted"
+        aria-label="Increase stock"
+      >
+        <Plus className="h-3.5 w-3.5" />
+      </button>
+      {saving && (
+        <span className="ml-1 h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      )}
+    </div>
   );
 }
