@@ -1,13 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
-import { myProfile } from "@/lib/db/server-helpers";
+import { myCampus } from "@/lib/db/server-helpers";
 import { PageContainer } from "@/components/app-shell";
 import { Card, CardBody } from "@/components/ui/card";
+import { PreorderControl } from "@/components/admin/preorder-control";
 import { money } from "@/lib/utils";
 import { ShoppingBag, Wallet, Banknote, AlertTriangle } from "lucide-react";
 
 export default async function AdminDashboard() {
-  const profile = await myProfile();
-  const campusId = profile?.campus_id ?? "";
+  const campus = await myCampus();
+  const campusId = campus?.id ?? "";
   const supabase = await createClient();
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
@@ -39,6 +40,11 @@ export default async function AdminDashboard() {
     <PageContainer>
       <h1 className="mb-1 text-2xl font-extrabold text-text">Dashboard</h1>
       <p className="mb-6 text-sm text-text-muted">Today at a glance</p>
+      {campus && (
+        <div className="mb-4">
+          <PreorderControl campus={campus} compact />
+        </div>
+      )}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((c) => (
           <Card key={c.label}>

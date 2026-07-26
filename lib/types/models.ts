@@ -13,6 +13,10 @@ export interface Campus {
   manager_discount_enabled: boolean;
   shift_active: boolean;
   is_active: boolean;
+  preorder_open: boolean;
+  preorder_opens_at: string | null;
+  preorder_closes_at: string | null;
+  whatsapp_number: string | null;
   created_at: string;
 }
 

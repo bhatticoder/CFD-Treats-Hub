@@ -1,19 +1,25 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Clock, Store } from "lucide-react";
+import { Clock, Store, User } from "lucide-react";
 import { money, cn } from "@/lib/utils";
 import { PageContainer } from "@/components/app-shell";
 import { Card, CardBody } from "@/components/ui/card";
 import { Badge, EmptyState } from "@/components/ui/misc";
-import type { Order } from "@/lib/types/models";
+import { PreorderControl } from "@/components/admin/preorder-control";
+import type { Campus, Order } from "@/lib/types/models";
 
-type ItemRow = { name: string; restaurant: string; qty: number };
+type View = "time" | "restaurant" | "customer";
 
-export function AdminPreorders({ preorders }: { preorders: Order[] }) {
-  const [view, setView] = useState<"time" | "restaurant">("time");
+export function AdminPreorders({
+  campus,
+  preorders,
+}: {
+  campus: Campus;
+  preorders: Order[];
+}) {
+  const [view, setView] = useState<View>("time");
 
-  // Aggregate item quantities grouped by restaurant → "what to buy where".
   const byRestaurant = useMemo(() => {
     const map = new Map<string, Map<string, number>>();
     for (const o of preorders) {
@@ -26,68 +32,62 @@ export function AdminPreorders({ preorders }: { preorders: Order[] }) {
         inner.set(name, (inner.get(name) ?? 0) + it.quantity);
       }
     }
-    const out: { restaurant: string; items: ItemRow[] }[] = [];
-    for (const [restaurant, inner] of map) {
-      out.push({
+    return [...map.entries()]
+      .map(([restaurant, inner]) => ({
         restaurant,
-        items: [...inner].map(([name, qty]) => ({ name, restaurant, qty })),
-      });
-    }
-    return out.sort((a, b) => a.restaurant.localeCompare(b.restaurant));
+        items: [...inner].map(([name, qty]) => ({ name, qty })),
+      }))
+      .sort((a, b) => a.restaurant.localeCompare(b.restaurant));
   }, [preorders]);
+
+  const byCustomer = useMemo(
+    () =>
+      [...preorders].sort((a, b) => {
+        const an = customerName(a);
+        const bn = customerName(b);
+        return an.localeCompare(bn);
+      }),
+    [preorders],
+  );
 
   return (
     <PageContainer max="max-w-3xl">
       <h1 className="mb-1 text-2xl font-extrabold text-text">Pre-orders</h1>
       <p className="mb-4 text-sm text-text-muted">
-        {preorders.length} pre-order(s). Use “By restaurant” to see what to buy where.
+        Open/close pre-ordering and review what everyone ordered.
       </p>
 
-      <div className="mb-5 flex gap-2">
-        {(["time", "restaurant"] as const).map((v) => (
+      {campus && (
+        <div className="mb-5">
+          <PreorderControl campus={campus} />
+        </div>
+      )}
+
+      <div className="mb-5 flex flex-wrap gap-2">
+        {([
+          ["time", "By time", Clock],
+          ["restaurant", "By restaurant", Store],
+          ["customer", "By customer", User],
+        ] as const).map(([v, label, Icon]) => (
           <button
             key={v}
             onClick={() => setView(v)}
             className={cn(
               "flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm",
-              view === v ? "border-primary bg-primary text-on-primary" : "border-border bg-surface text-text-muted",
+              view === v
+                ? "border-primary bg-primary text-on-primary"
+                : "border-border bg-surface text-text-muted",
             )}
           >
-            {v === "time" ? <Clock className="h-4 w-4" /> : <Store className="h-4 w-4" />}
-            {v === "time" ? "By time" : "By restaurant"}
+            <Icon className="h-4 w-4" />
+            {label}
           </button>
         ))}
       </div>
 
       {preorders.length === 0 ? (
         <EmptyState title="No pre-orders yet" />
-      ) : view === "time" ? (
-        <div className="space-y-3">
-          {preorders.map((o) => (
-            <Card key={o.id}>
-              <CardBody className="p-4">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-text">{o.order_number}</span>
-                  <Badge tone={o.payment_method === "cod" ? "warn" : "success"}>
-                    {o.payment_method === "cod" ? "COD" : "Paid"}
-                  </Badge>
-                </div>
-                <p className="text-sm text-text-muted">
-                  Room {o.room_number}, {o.block} · {new Date(o.created_at).toLocaleString()}
-                </p>
-                <ul className="mt-2 text-sm text-text">
-                  {o.order_items?.map((it) => (
-                    <li key={it.id}>
-                      {it.name} × {it.quantity}
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-2 font-bold text-primary">{money(o.total)}</p>
-              </CardBody>
-            </Card>
-          ))}
-        </div>
-      ) : (
+      ) : view === "restaurant" ? (
         <div className="space-y-4">
           {byRestaurant.map((grp) => (
             <Card key={grp.restaurant}>
@@ -107,7 +107,47 @@ export function AdminPreorders({ preorders }: { preorders: Order[] }) {
             </Card>
           ))}
         </div>
+      ) : (
+        <div className="space-y-3">
+          {(view === "customer" ? byCustomer : preorders).map((o) => (
+            <Card key={o.id}>
+              <CardBody className="p-4">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-text">
+                    {view === "customer" ? customerName(o) : o.order_number}
+                  </span>
+                  <Badge tone={o.payment_method === "cod" ? "warn" : "success"}>
+                    {o.payment_method === "cod" ? "COD" : "Paid"}
+                  </Badge>
+                </div>
+                <p className="text-sm text-text-muted">
+                  {o.order_number} · Room {o.room_number}, {o.block}
+                  {customerPhone(o) ? ` · ${customerPhone(o)}` : ""} ·{" "}
+                  {new Date(o.created_at).toLocaleString()}
+                </p>
+                <ul className="mt-2 text-sm text-text">
+                  {o.order_items?.map((it) => (
+                    <li key={it.id}>
+                      {it.name} × {it.quantity} —{" "}
+                      <span className="text-text-muted">{money(it.total_price)}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 font-bold text-primary">{money(o.total)}</p>
+              </CardBody>
+            </Card>
+          ))}
+        </div>
       )}
     </PageContainer>
   );
+}
+
+function customerName(o: Order): string {
+  const p = (o as unknown as { profiles?: { full_name?: string } }).profiles;
+  return p?.full_name ?? "Customer";
+}
+function customerPhone(o: Order): string {
+  const p = (o as unknown as { profiles?: { phone?: string } }).profiles;
+  return p?.phone ?? "";
 }

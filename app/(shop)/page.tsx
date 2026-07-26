@@ -1,6 +1,8 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { MenuBrowser } from "@/components/menu-browser";
-import type { Item, Profile } from "@/lib/types/models";
+import { isPreorderOpen } from "@/lib/domain/preorder";
+import type { Campus, Item, Profile } from "@/lib/types/models";
 
 export default async function MenuPage() {
   const supabase = await createClient();
@@ -10,13 +12,18 @@ export default async function MenuPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("*, campuses(name, shift_active)")
+    .select("*, campuses(*)")
     .eq("id", user!.id)
     .maybeSingle();
 
-  const p = profile as (Profile & { campuses?: { name: string; shift_active: boolean } }) | null;
+  const p = profile as (Profile & { campuses?: Campus }) | null;
+  const campus = p?.campuses ?? null;
   const campusId = p?.campus_id;
-  const shiftActive = p?.campuses?.shift_active ?? true;
+
+  // Pre-order window is on → there's no night stock, send them to pre-order.
+  if (isPreorderOpen(campus)) redirect("/preorder");
+
+  const shiftActive = campus?.shift_active ?? true;
 
   const { data: items } = await supabase
     .from("items")
@@ -26,23 +33,15 @@ export default async function MenuPage() {
     .order("category")
     .order("name");
 
-  // Are there any pre-order items open right now for this campus?
-  const { count: preorderCount } = await supabase
-    .from("items")
-    .select("id", { count: "exact", head: true })
-    .eq("campus_id", campusId ?? "")
-    .eq("is_preorder", true)
-    .eq("is_available", true);
-
   const firstName = p?.full_name?.split(" ")[0] ?? "there";
 
   return (
     <MenuBrowser
       items={(items as Item[]) ?? []}
       shiftActive={shiftActive}
-      preordersOpen={(preorderCount ?? 0) > 0}
+      preordersOpen={false}
       firstName={firstName}
-      campusName={p?.campuses?.name ?? "CFD Campus"}
+      campusName={campus?.name ?? "CFD Campus"}
     />
   );
 }
