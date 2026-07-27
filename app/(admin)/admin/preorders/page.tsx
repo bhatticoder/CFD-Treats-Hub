@@ -1,18 +1,26 @@
 import { createClient } from "@/lib/supabase/server";
-import { myCampus } from "@/lib/db/server-helpers";
 import { AdminPreorders } from "@/components/admin/admin-preorders";
 import type { Campus, Order } from "@/lib/types/models";
 
 export default async function PreordersPage() {
-  const campus = await myCampus();
   const supabase = await createClient();
+  // Admin sees every campus (RLS allows) so each can be opened/closed on its own.
+  const { data: campuses } = await supabase
+    .from("campuses")
+    .select("*")
+    .eq("is_active", true)
+    .order("name");
   const { data } = await supabase
     .from("orders")
-    .select("*, order_items(*, items(name, restaurants(name))), profiles(full_name, phone)")
-    .eq("campus_id", campus?.id ?? "")
+    .select(
+      "*, order_items(*, items(name, restaurants(name))), profiles(full_name, phone), campuses(name)",
+    )
     .eq("is_preorder", true)
     .order("created_at", { ascending: false });
   return (
-    <AdminPreorders campus={campus as Campus} preorders={(data as Order[]) ?? []} />
+    <AdminPreorders
+      campuses={(campuses as Campus[]) ?? []}
+      preorders={(data as Order[]) ?? []}
+    />
   );
 }

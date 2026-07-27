@@ -53,6 +53,7 @@ export function InventoryManager({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<"all" | "menu" | "preorder">("all");
   const [editing, setEditing] = useState<Item | null>(null);
   const [draft, setDraft] = useState<Draft>(empty);
   const [file, setFile] = useState<File | null>(null);
@@ -151,11 +152,40 @@ export function InventoryManager({
         </Button>
       </div>
 
-      {items.length === 0 ? (
-        <p className="py-16 text-center text-text-faint">No items yet.</p>
-      ) : (
-        <div className="space-y-3">
-          {items.map((item) => (
+      <div className="mb-4 flex flex-wrap gap-2">
+        {([
+          ["all", "All"],
+          ["menu", "Menu items"],
+          ["preorder", "Pre-order items"],
+        ] as const).map(([v, label]) => (
+          <button
+            key={v}
+            onClick={() => setTab(v)}
+            className={
+              "rounded-full border px-4 py-1.5 text-sm " +
+              (tab === v
+                ? "border-primary bg-primary text-on-primary"
+                : "border-border bg-surface text-text-muted hover:bg-bg-muted")
+            }
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {(() => {
+        const shown = items.filter((i) =>
+          tab === "all" ? true : tab === "preorder" ? i.is_preorder : !i.is_preorder,
+        );
+        return shown.length === 0 ? (
+          <p className="py-16 text-center text-text-faint">
+            {tab === "preorder"
+              ? "No pre-order items yet. Add an item and toggle “Pre-order item” on."
+              : "No items yet."}
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {shown.map((item) => (
             <Card key={item.id}>
               <CardBody className="flex items-center gap-3 p-4">
                 <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-bg-muted text-xl">
@@ -167,8 +197,9 @@ export function InventoryManager({
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="flex items-center gap-2 font-semibold text-text">
+                  <p className="flex flex-wrap items-center gap-2 font-semibold text-text">
                     {item.name}
+                    {item.is_preorder && <Badge tone="primary">Pre-order</Badge>}
                     {!item.is_available && <Badge tone="error">Hidden</Badge>}
                   </p>
                   <div className="mt-1 flex flex-wrap items-center gap-3">
@@ -188,8 +219,9 @@ export function InventoryManager({
               </CardBody>
             </Card>
           ))}
-        </div>
-      )}
+            </div>
+          );
+        })()}
 
       <Modal
         open={open}

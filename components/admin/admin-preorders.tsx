@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Clock, Store, User } from "lucide-react";
+import { Clock, Store, User, Building2 } from "lucide-react";
 import { money, cn } from "@/lib/utils";
 import { PageContainer } from "@/components/app-shell";
 import { Card, CardBody } from "@/components/ui/card";
+import { Select } from "@/components/ui/input";
 import { Badge, EmptyState } from "@/components/ui/misc";
 import { PreorderControl } from "@/components/admin/preorder-control";
 import type { Campus, Order } from "@/lib/types/models";
@@ -12,17 +13,26 @@ import type { Campus, Order } from "@/lib/types/models";
 type View = "time" | "restaurant" | "customer";
 
 export function AdminPreorders({
-  campus,
+  campuses,
   preorders,
 }: {
-  campus: Campus;
+  campuses: Campus[];
   preorders: Order[];
 }) {
   const [view, setView] = useState<View>("time");
+  const [campusFilter, setCampusFilter] = useState<string>("all");
+
+  const filtered = useMemo(
+    () =>
+      campusFilter === "all"
+        ? preorders
+        : preorders.filter((o) => o.campus_id === campusFilter),
+    [preorders, campusFilter],
+  );
 
   const byRestaurant = useMemo(() => {
     const map = new Map<string, Map<string, number>>();
-    for (const o of preorders) {
+    for (const o of filtered) {
       for (const it of o.order_items ?? []) {
         const rec = it.items as { name?: string; restaurants?: { name?: string } | null } | null;
         const restaurant = rec?.restaurants?.name ?? "Unassigned";
@@ -38,32 +48,34 @@ export function AdminPreorders({
         items: [...inner].map(([name, qty]) => ({ name, qty })),
       }))
       .sort((a, b) => a.restaurant.localeCompare(b.restaurant));
-  }, [preorders]);
+  }, [filtered]);
 
   const byCustomer = useMemo(
-    () =>
-      [...preorders].sort((a, b) => {
-        const an = customerName(a);
-        const bn = customerName(b);
-        return an.localeCompare(bn);
-      }),
-    [preorders],
+    () => [...filtered].sort((a, b) => customerName(a).localeCompare(customerName(b))),
+    [filtered],
   );
 
   return (
     <PageContainer max="max-w-3xl">
       <h1 className="mb-1 text-2xl font-extrabold text-text">Pre-orders</h1>
       <p className="mb-4 text-sm text-text-muted">
-        Open/close pre-ordering and review what everyone ordered.
+        Each campus opens/closes independently. Review what everyone ordered.
       </p>
 
-      {campus && (
-        <div className="mb-5">
-          <PreorderControl campus={campus} />
-        </div>
-      )}
+      {/* Per-campus open/close controls */}
+      <div className="mb-6 space-y-4">
+        {campuses.map((c) => (
+          <div key={c.id}>
+            <p className="mb-2 flex items-center gap-2 text-sm font-bold text-text">
+              <Building2 className="h-4 w-4 text-primary" /> {c.name}
+            </p>
+            <PreorderControl campus={c} />
+          </div>
+        ))}
+      </div>
 
-      <div className="mb-5 flex flex-wrap gap-2">
+      {/* Filters */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         {([
           ["time", "By time", Clock],
           ["restaurant", "By restaurant", Store],
@@ -83,9 +95,21 @@ export function AdminPreorders({
             {label}
           </button>
         ))}
+        {campuses.length > 1 && (
+          <Select
+            className="ml-auto w-44"
+            value={campusFilter}
+            onChange={(e) => setCampusFilter(e.target.value)}
+          >
+            <option value="all">All campuses</option>
+            {campuses.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </Select>
+        )}
       </div>
 
-      {preorders.length === 0 ? (
+      {filtered.length === 0 ? (
         <EmptyState title="No pre-orders yet" />
       ) : view === "restaurant" ? (
         <div className="space-y-4">
@@ -109,7 +133,7 @@ export function AdminPreorders({
         </div>
       ) : (
         <div className="space-y-3">
-          {(view === "customer" ? byCustomer : preorders).map((o) => (
+          {(view === "customer" ? byCustomer : filtered).map((o) => (
             <Card key={o.id}>
               <CardBody className="p-4">
                 <div className="flex items-center justify-between">
@@ -121,6 +145,7 @@ export function AdminPreorders({
                   </Badge>
                 </div>
                 <p className="text-sm text-text-muted">
+                  {campusName(o) ? `${campusName(o)} · ` : ""}
                   {o.order_number} · Room {o.room_number}, {o.block}
                   {customerPhone(o) ? ` · ${customerPhone(o)}` : ""} ·{" "}
                   {new Date(o.created_at).toLocaleString()}
@@ -144,10 +169,11 @@ export function AdminPreorders({
 }
 
 function customerName(o: Order): string {
-  const p = (o as unknown as { profiles?: { full_name?: string } }).profiles;
-  return p?.full_name ?? "Customer";
+  return (o as unknown as { profiles?: { full_name?: string } }).profiles?.full_name ?? "Customer";
 }
 function customerPhone(o: Order): string {
-  const p = (o as unknown as { profiles?: { phone?: string } }).profiles;
-  return p?.phone ?? "";
+  return (o as unknown as { profiles?: { phone?: string } }).profiles?.phone ?? "";
+}
+function campusName(o: Order): string {
+  return (o as unknown as { campuses?: { name?: string } }).campuses?.name ?? "";
 }
