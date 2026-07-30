@@ -77,7 +77,7 @@ export function MenuBrowser({
           <div>
             <p className="font-extrabold text-error">ALL FINISHED FOR TODAY</p>
             <p className="text-sm text-text-muted">
-              Ordering is closed. Come back for the next shift!
+              We&apos;ll treat you again tomorrow InShaAllah!
             </p>
           </div>
         </div>
