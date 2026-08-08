@@ -49,10 +49,10 @@ export default function RegisterPage() {
     if (!gender) return setError("Select your gender");
     const selectedCampus = campuses.find((c) => c.id === campusId);
     if (selectedCampus?.domain_suffix && !email.toLowerCase().endsWith(selectedCampus.domain_suffix.toLowerCase())) {
-      if (selectedCampus.domain_suffix.toLowerCase().includes("nu.edu.pk") && email.toLowerCase().endsWith("@cfd.nu.edu.pk")) {
+      if (email.toLowerCase().endsWith("@cfd.nu.edu.pk")) {
         // Allow valid cfd.nu.edu.pk email to pass
       } else {
-        return setError(`Email must end with ${selectedCampus.domain_suffix} for this campus`);
+        return setError("Email must end with @cfd.nu.edu.pk");
       }
     }
     const rErr = validateRoom(room);
@@ -66,13 +66,23 @@ export default function RegisterPage() {
       setLoading(false);
       return router.replace("/login");
     }
+
+    // Auto-heal campus_id if selected campus in DB has a stale typo suffix (like @cfd.nh.edu.pk)
+    let effectiveCampusId = campusId;
+    if (selectedCampus?.domain_suffix?.toLowerCase().includes("nh.edu.pk")) {
+      const validMatch = campuses.find(
+        (c) => c.gender === gender && c.domain_suffix?.toLowerCase().endsWith("@cfd.nu.edu.pk")
+      );
+      if (validMatch) effectiveCampusId = validMatch.id;
+    }
+
     const { error } = await supabase.from("profiles").insert({
       id: uid,
       email,
       full_name: name.trim(),
       phone: phone.trim(),
       gender,
-      campus_id: campusId,
+      campus_id: effectiveCampusId,
       block,
       room_number: room.trim(),
       role: "customer",
