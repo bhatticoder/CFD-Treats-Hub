@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Building2, Trash2 } from "lucide-react";
+import { Plus, Building2, Trash2, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { GENDERS } from "@/lib/domain/constants";
+import { GENDERS, DEFAULT_DOMAIN_SUFFIX } from "@/lib/domain/constants";
 import { PageContainer } from "@/components/app-shell";
 import { Card, CardBody } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,29 +16,54 @@ import type { Campus } from "@/lib/types/models";
 export function CampusesManager({ campuses }: { campuses: Campus[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Campus | null>(null);
   const [name, setName] = useState("");
-  const [domain, setDomain] = useState("@");
+  const [domain, setDomain] = useState(DEFAULT_DOMAIN_SUFFIX);
   const [gender, setGender] = useState<string>("Male");
   const [codCap, setCodCap] = useState("100");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  async function add() {
-    if (!name.trim() || !domain.trim()) return setError("Name and domain are required");
+  function openNew() {
+    setEditing(null);
+    setName("");
+    setDomain(DEFAULT_DOMAIN_SUFFIX);
+    setGender("Male");
+    setCodCap("100");
+    setError(null);
+    setOpen(true);
+  }
+
+  function openEdit(c: Campus) {
+    setEditing(c);
+    setName(c.name);
+    setDomain(c.domain_suffix || DEFAULT_DOMAIN_SUFFIX);
+    setGender(c.gender || "Male");
+    setCodCap(String(c.cod_cap_percent ?? 100));
+    setError(null);
+    setOpen(true);
+  }
+
+  async function save() {
+    if (!name.trim() || !domain.trim()) return setError("Name and domain suffix are required");
     setBusy(true);
     setError(null);
-    const { error } = await createClient().from("campuses").insert({
+    const supabase = createClient();
+    const payload = {
       name: name.trim(),
       domain_suffix: domain.trim().toLowerCase(),
-      gender,
+      gender: gender as "Male" | "Female",
       cod_cap_percent: Number(codCap) || 100,
-      is_active: true,
-    });
+    };
+
+    const { error: err } = editing
+      ? await supabase.from("campuses").update(payload).eq("id", editing.id)
+      : await supabase.from("campuses").insert({ ...payload, is_active: true });
+
     setBusy(false);
-    if (error) return setError(error.message);
+    if (err) return setError(err.message);
     setOpen(false);
-    setName(""); setDomain("@"); setGender("Male"); setCodCap("100");
     router.refresh();
   }
 
@@ -57,7 +82,7 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
     <PageContainer max="max-w-3xl">
       <div className="mb-5 flex items-center justify-between">
         <h1 className="text-2xl font-extrabold text-text">Campuses</h1>
-        <Button onClick={() => setOpen(true)}>
+        <Button onClick={openNew}>
           <Plus className="h-4 w-4" /> Add campus
         </Button>
       </div>
@@ -83,6 +108,13 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
                 {c.shift_active ? "Shift open" : "Closed"}
               </Badge>
               <button
+                onClick={() => openEdit(c)}
+                className="p-2 text-primary hover:bg-primary-soft/50 rounded-lg"
+                title="Edit campus"
+              >
+                <Pencil className="h-5 w-5" />
+              </button>
+              <button
                 onClick={() => del(c)}
                 className="p-2 text-error hover:bg-error/10 rounded-lg"
                 title="Delete campus"
@@ -97,11 +129,11 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
       <Modal
         open={open}
         onClose={() => setOpen(false)}
-        title="Add campus"
+        title={editing ? "Edit campus" : "Add campus"}
         footer={
           <>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button loading={busy} onClick={add}>Add</Button>
+            <Button loading={busy} onClick={save}>{editing ? "Update" : "Add"}</Button>
           </>
         }
       >
