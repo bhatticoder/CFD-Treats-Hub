@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-const RS = "₨"; // ₨
+const RS = "Rs.";
 
 /** Format a number as PKR currency (no decimals — matches the Flutter app). */
 export function money(value: number | null | undefined): string {

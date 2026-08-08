@@ -5,6 +5,8 @@ import { isPreorderOpen, whatsappLink } from "@/lib/domain/preorder";
 import type { Campus, Item, Profile } from "@/lib/types/models";
 import { CalendarClock, MessageCircle } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export default async function PreorderPage() {
   const supabase = await createClient();
   const {

@@ -29,7 +29,7 @@ export function CustomerShell({
   ];
 
   return (
-    <AppShell items={items} brand="CFD Treats" logoUrl={logoUrl} themeColor={themeColor}>
+    <AppShell items={items} brand="CFD Hostel Treats" logoUrl={logoUrl} themeColor={themeColor}>
       {children}
     </AppShell>
   );

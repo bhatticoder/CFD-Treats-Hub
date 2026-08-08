@@ -1,8 +1,9 @@
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { MenuBrowser } from "@/components/menu-browser";
 import { isPreorderOpen } from "@/lib/domain/preorder";
 import type { Campus, Item, Profile } from "@/lib/types/models";
+
+export const dynamic = "force-dynamic";
 
 export default async function MenuPage() {
   const supabase = await createClient();
@@ -20,9 +21,7 @@ export default async function MenuPage() {
   const campus = p?.campuses ?? null;
   const campusId = p?.campus_id;
 
-  // Pre-order window is on → there's no night stock, send them to pre-order.
-  if (isPreorderOpen(campus)) redirect("/preorder");
-
+  const preordersOpen = isPreorderOpen(campus);
   const shiftActive = campus?.shift_active ?? true;
 
   const { data: items } = await supabase
@@ -39,7 +38,7 @@ export default async function MenuPage() {
     <MenuBrowser
       items={(items as Item[]) ?? []}
       shiftActive={shiftActive}
-      preordersOpen={false}
+      preordersOpen={preordersOpen}
       firstName={firstName}
       campusName={campus?.name ?? "CFD Campus"}
     />

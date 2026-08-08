@@ -21,15 +21,16 @@ function VerifyInner() {
   const [resending, setResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function verify() {
-    if (!/^\d{6,10}$/.test(code.trim()))
+  async function verify(codeOverride?: string) {
+    const token = (codeOverride ?? code).trim();
+    if (!/^\d{6,10}$/.test(token))
       return setError(`Enter the ${OTP_LENGTH}-digit code from your email`);
     setError(null);
     setLoading(true);
     const supabase = createClient();
     const { error } = await supabase.auth.verifyOtp({
       email,
-      token: code.trim(),
+      token,
       type: "email",
     });
     if (error) {
@@ -87,14 +88,15 @@ function VerifyInner() {
           onChange={(e) => {
             const v = e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH);
             setCode(v);
-            if (v.length === OTP_LENGTH) setTimeout(verify, 50);
+            setError(null);
+            if (v.length === OTP_LENGTH) setTimeout(() => verify(v), 50);
           }}
           placeholder={"•".repeat(OTP_LENGTH)}
         />
 
         {error && <p className="mt-3 text-sm text-error">{error}</p>}
 
-        <Button className="mt-5 w-full" size="lg" loading={loading} onClick={verify}>
+        <Button className="mt-5 w-full" size="lg" loading={loading} onClick={() => verify()}>
           Verify &amp; continue
         </Button>
         <button
