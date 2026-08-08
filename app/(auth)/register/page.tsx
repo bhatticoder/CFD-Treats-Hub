@@ -47,7 +47,14 @@ export default function RegisterPage() {
     if (!name.trim()) return setError("Enter your full name");
     if (pErr) return setError(pErr);
     if (!gender) return setError("Select your gender");
-    if (!campusId) return setError("Select your campus/hostel");
+    const selectedCampus = campuses.find((c) => c.id === campusId);
+    if (selectedCampus?.domain_suffix && !email.toLowerCase().endsWith(selectedCampus.domain_suffix.toLowerCase())) {
+      if (selectedCampus.domain_suffix.toLowerCase().includes("nu.edu.pk") && email.toLowerCase().endsWith("@cfd.nu.edu.pk")) {
+        // Allow valid cfd.nu.edu.pk email to pass
+      } else {
+        return setError(`Email must end with ${selectedCampus.domain_suffix} for this campus`);
+      }
+    }
     const rErr = validateRoom(room);
     if (rErr) return setError(rErr);
 
