@@ -22,9 +22,16 @@ export default async function MenuPage() {
   const campusId = p?.campus_id;
 
   const preordersOpen = isPreorderOpen(campus);
-  const shiftActive = campus?.shift_active ?? true;
 
-  const { data: items } = await supabase
+  // Fetch IDs of active (non-hidden) restaurants for this campus.
+  const { data: activeRestaurants } = await supabase
+    .from("restaurants")
+    .select("id")
+    .eq("campus_id", campusId ?? "")
+    .eq("is_active", true);
+  const activeRestIds = new Set((activeRestaurants ?? []).map((r) => r.id));
+
+  const { data: rawItems } = await supabase
     .from("items")
     .select("*, restaurants(name)")
     .eq("campus_id", campusId ?? "")
@@ -32,11 +39,20 @@ export default async function MenuPage() {
     .order("category")
     .order("name");
 
+  // Filter out items belonging to hidden restaurants.
+  const items = ((rawItems as Item[]) ?? []).filter(
+    (i) => !i.restaurant_id || activeRestIds.has(i.restaurant_id),
+  );
+
+  // Shift is active if the admin toggled it on, OR if there are in-stock items.
+  const hasStock = items.some((i) => i.is_available && i.stock_quantity > 0);
+  const shiftActive = (campus?.shift_active ?? true) || hasStock;
+
   const firstName = p?.full_name?.split(" ")[0] ?? "there";
 
   return (
     <MenuBrowser
-      items={(items as Item[]) ?? []}
+      items={items}
       shiftActive={shiftActive}
       preordersOpen={preordersOpen}
       firstName={firstName}

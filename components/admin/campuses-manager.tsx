@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Building2 } from "lucide-react";
+import { Plus, Building2, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { GENDERS } from "@/lib/domain/constants";
 import { PageContainer } from "@/components/app-shell";
@@ -22,6 +22,7 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
   const [codCap, setCodCap] = useState("100");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   async function add() {
     if (!name.trim() || !domain.trim()) return setError("Name and domain are required");
@@ -41,6 +42,17 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
     router.refresh();
   }
 
+  async function del(campus: Campus) {
+    if (!confirm(`Delete "${campus.name}"? This cannot be undone.`)) return;
+    setDeleteError(null);
+    const { error } = await createClient().from("campuses").delete().eq("id", campus.id);
+    if (error) {
+      setDeleteError(`Cannot delete "${campus.name}": ${error.message}`);
+      return;
+    }
+    router.refresh();
+  }
+
   return (
     <PageContainer max="max-w-3xl">
       <div className="mb-5 flex items-center justify-between">
@@ -49,6 +61,10 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
           <Plus className="h-4 w-4" /> Add campus
         </Button>
       </div>
+
+      {deleteError && (
+        <p className="mb-4 rounded-xl bg-error/10 p-3 text-sm text-error">{deleteError}</p>
+      )}
 
       <div className="space-y-3">
         {campuses.map((c) => (
@@ -66,6 +82,13 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
               <Badge tone={c.shift_active ? "success" : "warn"}>
                 {c.shift_active ? "Shift open" : "Closed"}
               </Badge>
+              <button
+                onClick={() => del(c)}
+                className="p-2 text-error hover:bg-error/10 rounded-lg"
+                title="Delete campus"
+              >
+                <Trash2 className="h-5 w-5" />
+              </button>
             </CardBody>
           </Card>
         ))}

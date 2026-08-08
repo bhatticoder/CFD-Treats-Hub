@@ -139,7 +139,11 @@ export function InventoryManager({
   }
   async function del(item: Item) {
     if (!confirm(`Delete "${item.name}"?`)) return;
-    await createClient().from("items").delete().eq("id", item.id);
+    const { error: delErr } = await createClient().from("items").delete().eq("id", item.id);
+    if (delErr) {
+      setError(`Cannot delete "${item.name}": ${delErr.message}`);
+      return;
+    }
     router.refresh();
   }
 
@@ -172,6 +176,10 @@ export function InventoryManager({
           </button>
         ))}
       </div>
+
+      {error && !open && (
+        <p className="mb-4 rounded-xl bg-error/10 p-3 text-sm text-error">{error}</p>
+      )}
 
       {(() => {
         const shown = items.filter((i) =>
