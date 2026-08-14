@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import { motion } from "framer-motion";
-import { Moon, Plus, Check, CalendarClock, Store } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { Moon, Plus, Minus, Check, CalendarClock, Store, X, ShoppingCart } from "lucide-react";
 import { CATEGORIES } from "@/lib/domain/constants";
 import { money, cn } from "@/lib/utils";
 import { useCart } from "@/lib/store/cart";
@@ -25,6 +25,7 @@ export function MenuBrowser({
 }) {
   const [category, setCategory] = useState<string>("All");
   const [restaurant, setRestaurant] = useState<string>("All");
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
 
   // Distinct restaurants present in this campus's items.
   const restaurants = useMemo(() => {
@@ -62,12 +63,12 @@ export function MenuBrowser({
           <p className="text-lg font-extrabold text-primary">
             Pre-Orders Open, Order Now! 👇🏻👇🏻
           </p>
-          <Link
+          <a
             href="/preorder"
             className="mt-3 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-semibold text-on-primary hover:bg-primary-hover"
           >
             <CalendarClock className="h-5 w-5" /> Go to Pre-orders
-          </Link>
+          </a>
         </div>
       )}
 
@@ -127,27 +128,73 @@ export function MenuBrowser({
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {visible.map((item) => (
-            <ItemCard key={item.id} item={item} enabled={shiftActive} />
+            <ItemCard
+              key={item.id}
+              item={item}
+              enabled={shiftActive}
+              onOpenDetail={() => setSelectedItem(item)}
+            />
           ))}
         </div>
       )}
+
+      {/* Item Detail Modal */}
+      <AnimatePresence>
+        {selectedItem && (
+          <ItemDetailModal
+            item={selectedItem}
+            enabled={shiftActive}
+            onClose={() => setSelectedItem(null)}
+          />
+        )}
+      </AnimatePresence>
     </PageContainer>
   );
 }
 
-function ItemCard({ item, enabled }: { item: Item; enabled: boolean }) {
+// ─── Item Card ────────────────────────────────────────────────────────────────
+
+function ItemCard({
+  item,
+  enabled,
+  onOpenDetail,
+}: {
+  item: Item;
+  enabled: boolean;
+  onOpenDetail: () => void;
+}) {
   const add = useCart((s) => s.add);
-  const [added, setAdded] = useState(false);
+  const increment = useCart((s) => s.increment);
+  const decrement = useCart((s) => s.decrement);
+  const lines = useCart((s) => s.lines);
+  const [justAdded, setJustAdded] = useState(false);
+
   const soldOut = item.stock_quantity <= 0 || !item.is_available || !enabled;
   const fewLeft =
     !soldOut && (item.stock_quantity <= 5 || item.tag === "FEW LEFT");
   const discounted = item.discounted_price != null;
 
-  function onAdd() {
+  // Check if this item is already in the cart
+  const cartLine = lines.find((l) => l.item.id === item.id);
+  const inCart = !!cartLine;
+  const qty = cartLine?.quantity ?? 0;
+
+  function onAdd(e: React.MouseEvent) {
+    e.stopPropagation();
     if (soldOut) return;
     add(item);
-    setAdded(true);
-    setTimeout(() => setAdded(false), 900);
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 900);
+  }
+
+  function onIncrement(e: React.MouseEvent) {
+    e.stopPropagation();
+    increment(item.id);
+  }
+
+  function onDecrement(e: React.MouseEvent) {
+    e.stopPropagation();
+    decrement(item.id);
   }
 
   return (
@@ -155,9 +202,10 @@ function ItemCard({ item, enabled }: { item: Item; enabled: boolean }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm",
+        "flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm cursor-pointer",
         soldOut && "opacity-60",
       )}
+      onClick={onOpenDetail}
     >
       <div className="relative aspect-square bg-bg-muted">
         {item.image_url ? (
@@ -207,29 +255,216 @@ function ItemCard({ item, enabled }: { item: Item; enabled: boolean }) {
         {item.expected_arrival && (
           <p className="mt-0.5 text-xs text-text-faint">🕒 ETA {item.expected_arrival}</p>
         )}
-        <button
-          disabled={soldOut}
-          onClick={onAdd}
-          className={cn(
-            "mt-3 flex h-9 items-center justify-center gap-1.5 rounded-lg text-sm font-semibold transition-colors",
-            soldOut
-              ? "cursor-not-allowed bg-bg-muted text-text-faint"
-              : added
-                ? "bg-success text-white"
-                : "bg-primary-soft text-primary hover:bg-primary hover:text-on-primary",
-          )}
-        >
-          {added ? (
-            <>
-              <Check className="h-4 w-4" /> Added
-            </>
-          ) : (
-            <>
-              <Plus className="h-4 w-4" /> Add
-            </>
-          )}
-        </button>
+
+        {/* Button area */}
+        {inCart ? (
+          // Permanent +/- controls when item is in cart
+          <div
+            className="mt-3 flex h-9 items-center justify-between rounded-lg bg-primary-soft"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={onDecrement}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors"
+            >
+              <Minus className="h-4 w-4" />
+            </button>
+            <span className="min-w-[1.5rem] text-center text-sm font-bold text-primary">
+              {qty}
+            </span>
+            <button
+              onClick={onIncrement}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          // Add button (with green flash on first add)
+          <button
+            disabled={soldOut}
+            onClick={onAdd}
+            className={cn(
+              "mt-3 flex h-9 items-center justify-center gap-1.5 rounded-lg text-sm font-semibold transition-colors",
+              soldOut
+                ? "cursor-not-allowed bg-bg-muted text-text-faint"
+                : justAdded
+                  ? "bg-success text-white"
+                  : "bg-primary-soft text-primary hover:bg-primary hover:text-on-primary",
+            )}
+          >
+            {justAdded ? (
+              <>
+                <Check className="h-4 w-4" /> Added
+              </>
+            ) : (
+              <>
+                <Plus className="h-4 w-4" /> Add
+              </>
+            )}
+          </button>
+        )}
       </div>
+    </motion.div>
+  );
+}
+
+// ─── Item Detail Modal ────────────────────────────────────────────────────────
+
+function ItemDetailModal({
+  item,
+  enabled,
+  onClose,
+}: {
+  item: Item;
+  enabled: boolean;
+  onClose: () => void;
+}) {
+  const add = useCart((s) => s.add);
+  const increment = useCart((s) => s.increment);
+  const decrement = useCart((s) => s.decrement);
+  const lines = useCart((s) => s.lines);
+  const router = useRouter();
+  const [justAdded, setJustAdded] = useState(false);
+
+  const soldOut = item.stock_quantity <= 0 || !item.is_available || !enabled;
+  const discounted = item.discounted_price != null;
+
+  const cartLine = lines.find((l) => l.item.id === item.id);
+  const inCart = !!cartLine;
+  const qty = cartLine?.quantity ?? 0;
+
+  function onAdd() {
+    if (soldOut) return;
+    add(item);
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 900);
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      onClick={onClose}
+    >
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+
+      {/* Sheet */}
+      <motion.div
+        initial={{ y: 60, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 60, opacity: 0 }}
+        transition={{ type: "spring", damping: 28, stiffness: 300 }}
+        className="relative z-10 w-full max-w-md rounded-t-3xl sm:rounded-3xl bg-surface shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-20 grid h-8 w-8 place-items-center rounded-full bg-black/30 text-white backdrop-blur-sm hover:bg-black/50 transition-colors"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        {/* Image */}
+        <div className="relative aspect-[4/3] w-full bg-bg-muted">
+          {item.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={item.image_url}
+              alt={item.name}
+              className={cn("h-full w-full object-cover", soldOut && "grayscale")}
+            />
+          ) : (
+            <div className="grid h-full place-items-center text-7xl">🍽️</div>
+          )}
+          {soldOut && (
+            <div className="absolute inset-0 grid place-items-center bg-black/40 backdrop-blur-[2px]">
+              <span className="rounded-full bg-white/90 px-4 py-1.5 text-sm font-bold text-error">
+                {enabled ? "SOLD OUT" : "CLOSED"}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Info */}
+        <div className="p-5">
+          <h2 className="text-xl font-extrabold text-text">{item.name}</h2>
+
+          {item.description && (
+            <p className="mt-1.5 text-sm text-text-muted leading-relaxed">
+              {item.description}
+            </p>
+          )}
+
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-2xl font-extrabold text-primary">
+              {money(discounted ? item.discounted_price : item.price)}
+            </span>
+            {discounted && (
+              <span className="text-sm text-text-faint line-through">
+                {money(item.price)}
+              </span>
+            )}
+          </div>
+
+          {item.expected_arrival && (
+            <p className="mt-1 text-sm text-text-faint">🕒 ETA {item.expected_arrival}</p>
+          )}
+
+          {/* Add / Qty controls */}
+          <div className="mt-5">
+            {inCart ? (
+              <div className="flex items-center gap-4">
+                <div className="flex flex-1 items-center justify-between rounded-xl bg-primary-soft h-12 px-2">
+                  <button
+                    onClick={() => decrement(item.id)}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors"
+                  >
+                    <Minus className="h-5 w-5" />
+                  </button>
+                  <span className="text-lg font-bold text-primary">{qty}</span>
+                  <button
+                    onClick={() => increment(item.id)}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors"
+                  >
+                    <Plus className="h-5 w-5" />
+                  </button>
+                </div>
+                <button
+                  onClick={() => { onClose(); router.push("/cart"); }}
+                  className="flex items-center gap-2 rounded-xl bg-primary px-4 h-12 font-semibold text-on-primary hover:bg-primary-hover transition-colors"
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  Cart
+                </button>
+              </div>
+            ) : (
+              <button
+                disabled={soldOut}
+                onClick={onAdd}
+                className={cn(
+                  "w-full flex h-12 items-center justify-center gap-2 rounded-xl text-base font-semibold transition-colors",
+                  soldOut
+                    ? "cursor-not-allowed bg-bg-muted text-text-faint"
+                    : justAdded
+                      ? "bg-success text-white"
+                      : "bg-primary text-on-primary hover:bg-primary-hover",
+                )}
+              >
+                {justAdded ? (
+                  <><Check className="h-5 w-5" /> Added to Cart!</>
+                ) : (
+                  <><Plus className="h-5 w-5" /> Add to Cart</>
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+      </motion.div>
     </motion.div>
   );
 }

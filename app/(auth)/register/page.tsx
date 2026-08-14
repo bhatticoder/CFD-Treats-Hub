@@ -66,10 +66,9 @@ export default function RegisterPage() {
       setLoading(false);
       return router.replace("/login");
     }
-
     // Auto-heal campus_id if selected campus in DB has a stale typo suffix (like @cfd.nu.edu.pk)
     let effectiveCampusId = campusId;
-    if (selectedCampus?.domain_suffix?.toLowerCase().includes("nh.edu.pk")) {
+    if (selectedCampus?.domain_suffix?.toLowerCase().includes("nu.edu.pk")) {
       const validMatch = campuses.find(
         (c) => c.gender === gender && c.domain_suffix?.toLowerCase().endsWith("@cfd.nu.edu.pk")
       );

@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
-import { LogOut, Menu, X } from "lucide-react";
+import { LogOut, Menu, X, ShoppingCart } from "lucide-react";
+import Link from "next/link";
 
 export interface NavItem {
   href: string;
@@ -25,12 +25,14 @@ export function AppShell({
   children,
   logoUrl,
   themeColor,
+  cartCount,
 }: {
   items: NavItem[];
   brand: string;
   children: React.ReactNode;
   logoUrl?: string | null;
   themeColor?: string | null;
+  cartCount?: number;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -130,6 +132,19 @@ export function AppShell({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={logoUrl || "/logo.png"} alt="" className="h-12 w-12 rounded-lg object-contain" />
           <p className="flex-1 font-bold text-text">{brand}</p>
+          {/* Cart button with badge */}
+          <Link
+            href="/cart"
+            aria-label="Cart"
+            className="relative grid h-10 w-10 place-items-center rounded-xl text-text hover:bg-bg-muted"
+          >
+            <ShoppingCart className="h-6 w-6" />
+            {cartCount ? (
+              <span className="absolute -top-0.5 -right-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[11px] font-bold text-on-primary">
+                {cartCount}
+              </span>
+            ) : null}
+          </Link>
           <button
             aria-label="Open menu"
             onClick={() => setDrawerOpen(true)}

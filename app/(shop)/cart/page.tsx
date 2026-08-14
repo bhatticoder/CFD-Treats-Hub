@@ -84,12 +84,20 @@ export default function CartPage() {
           quantity: l.quantity,
         })),
       });
-      if (error) throw error;
+      if (error) throw new Error(error.message ?? String(error));
       const order = Array.isArray(data) ? data[0] : data;
       clear();
       router.push(`/track/${order.id}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      // Supabase errors are objects with a `message` property — must extract the string
+      // otherwise React renders [object Object]
+      if (e && typeof e === "object" && "message" in e) {
+        setError((e as { message: string }).message);
+      } else if (e instanceof Error) {
+        setError(e.message);
+      } else {
+        setError(String(e));
+      }
       setPlacing(false);
     }
   }

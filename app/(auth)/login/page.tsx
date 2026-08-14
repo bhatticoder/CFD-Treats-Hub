@@ -39,15 +39,17 @@ export default function LoginPage() {
   return (
     <Card>
       <CardBody className="p-7">
-        <div className="mb-6 text-center">
+        <div className="mb-6 flex items-center gap-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo.png"
             alt="CFD Hostel Treats"
-            className="mx-auto mb-3 h-40 w-40 rounded-2xl object-contain"
+            className="h-20 w-20 rounded-2xl object-contain shrink-0"
           />
-          <h1 className="text-2xl font-extrabold text-text">CFD Hostel Treats</h1>
-          <p className="text-sm italic text-primary">– Cravings Fulfilled Daily –</p>
+          <div className="text-left">
+            <h1 className="text-2xl font-extrabold text-text leading-tight">CFD Hostel Treats</h1>
+            <p className="text-sm italic text-primary">– Cravings Fulfilled Daily –</p>
+          </div>
         </div>
 
         <Label htmlFor="email">University email</Label>

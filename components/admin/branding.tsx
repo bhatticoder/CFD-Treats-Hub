@@ -34,15 +34,23 @@ export function Branding({ campus }: { campus: Campus }) {
         const { error: upErr } = await supabase.storage
           .from("item-images")
           .upload(path, file, { contentType: file.type || "image/png" });
-        if (upErr) throw upErr;
+        if (upErr) throw new Error(upErr.message ?? String(upErr));
         payload.logo_url = supabase.storage.from("item-images").getPublicUrl(path).data.publicUrl;
       }
       const { error } = await supabase.from("campuses").update(payload).eq("id", campus.id);
-      if (error) throw error;
+      if (error) throw new Error(error.message ?? String(error));
       setMsg("Saved");
       router.refresh();
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : String(e));
+      // Supabase errors (PostgrestError) are plain objects with a `message` field,
+      // not instanceof Error — extract message to avoid rendering [object Object]
+      if (e && typeof e === "object" && "message" in e) {
+        setMsg((e as { message: string }).message);
+      } else if (e instanceof Error) {
+        setMsg(e.message);
+      } else {
+        setMsg(String(e));
+      }
     } finally {
       setBusy(false);
     }

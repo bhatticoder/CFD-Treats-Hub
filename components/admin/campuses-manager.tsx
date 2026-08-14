@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Building2, Trash2, Pencil } from "lucide-react";
+import { Plus, Building2, Trash2, Pencil, CalendarClock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { GENDERS, DEFAULT_DOMAIN_SUFFIX } from "@/lib/domain/constants";
 import { PageContainer } from "@/components/app-shell";
 import { Card, CardBody } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
-import { Badge } from "@/components/ui/misc";
+import { Badge, Switch } from "@/components/ui/misc";
 import { Modal } from "@/components/ui/modal";
 import type { Campus } from "@/lib/types/models";
 
@@ -24,6 +24,9 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Per-campus preorder toggle state: { [campusId]: boolean }
+  const [preorderLoading, setPreorderLoading] = useState<Record<string, boolean>>({});
 
   function openNew() {
     setEditing(null);
@@ -78,6 +81,16 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
     router.refresh();
   }
 
+  async function togglePreorder(campus: Campus, value: boolean) {
+    setPreorderLoading((prev) => ({ ...prev, [campus.id]: true }));
+    const { error } = await createClient()
+      .from("campuses")
+      .update({ preorder_open: value })
+      .eq("id", campus.id);
+    setPreorderLoading((prev) => ({ ...prev, [campus.id]: false }));
+    if (!error) router.refresh();
+  }
+
   return (
     <PageContainer max="max-w-3xl">
       <div className="mb-5 flex items-center justify-between">
@@ -94,33 +107,52 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
       <div className="space-y-3">
         {campuses.map((c) => (
           <Card key={c.id}>
-            <CardBody className="flex items-center gap-3 p-4">
-              <div className="grid h-11 w-11 place-items-center rounded-xl bg-primary-soft text-primary">
-                <Building2 className="h-5 w-5" />
+            <CardBody className="p-4 space-y-3">
+              {/* Campus info row */}
+              <div className="flex items-center gap-3">
+                <div className="grid h-11 w-11 place-items-center rounded-xl bg-primary-soft text-primary shrink-0">
+                  <Building2 className="h-5 w-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-text">{c.name}</p>
+                  <p className="text-sm text-text-muted">
+                    {c.domain_suffix} · {c.gender} · COD cap {c.cod_cap_percent}%
+                  </p>
+                </div>
+                <Badge tone={c.shift_active ? "success" : "warn"}>
+                  {c.shift_active ? "Shift open" : "Closed"}
+                </Badge>
+                <button
+                  onClick={() => openEdit(c)}
+                  className="p-2 text-primary hover:bg-primary-soft/50 rounded-lg"
+                  title="Edit campus"
+                >
+                  <Pencil className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => del(c)}
+                  className="p-2 text-error hover:bg-error/10 rounded-lg"
+                  title="Delete campus"
+                >
+                  <Trash2 className="h-5 w-5" />
+                </button>
               </div>
-              <div className="flex-1">
-                <p className="font-semibold text-text">{c.name}</p>
-                <p className="text-sm text-text-muted">
-                  {c.domain_suffix} · {c.gender} · COD cap {c.cod_cap_percent}%
-                </p>
+
+              {/* Pre-orders toggle row */}
+              <div className="flex items-center gap-3 rounded-xl border border-border bg-bg-muted px-4 py-2.5">
+                <CalendarClock className="h-4 w-4 text-primary shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-text">Pre-orders</p>
+                </div>
+                <Badge tone={c.preorder_open ? "success" : "neutral"}>
+                  {c.preorder_open ? "OPEN" : "CLOSED"}
+                </Badge>
+                <Switch
+                  checked={c.preorder_open}
+                  onChange={(v) => togglePreorder(c, v)}
+                  disabled={preorderLoading[c.id]}
+                />
               </div>
-              <Badge tone={c.shift_active ? "success" : "warn"}>
-                {c.shift_active ? "Shift open" : "Closed"}
-              </Badge>
-              <button
-                onClick={() => openEdit(c)}
-                className="p-2 text-primary hover:bg-primary-soft/50 rounded-lg"
-                title="Edit campus"
-              >
-                <Pencil className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => del(c)}
-                className="p-2 text-error hover:bg-error/10 rounded-lg"
-                title="Delete campus"
-              >
-                <Trash2 className="h-5 w-5" />
-              </button>
             </CardBody>
           </Card>
         ))}
