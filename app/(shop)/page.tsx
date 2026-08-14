@@ -44,9 +44,8 @@ export default async function MenuPage() {
     (i) => !i.restaurant_id || activeRestIds.has(i.restaurant_id),
   );
 
-  // Shift is active if the admin toggled it on, OR if there are in-stock items.
-  const hasStock = items.some((i) => i.is_available && i.stock_quantity > 0);
-  const shiftActive = (campus?.shift_active ?? true) || hasStock;
+  // Shift is active if the campus shift_active flag is true (defaults to true if null).
+  const shiftActive = campus?.shift_active ?? true;
 
   const firstName = p?.full_name?.split(" ")[0] ?? "there";
 

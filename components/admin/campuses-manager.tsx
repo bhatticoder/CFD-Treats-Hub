@@ -81,6 +81,8 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
     router.refresh();
   }
 
+  const [shiftLoading, setShiftLoading] = useState<Record<string, boolean>>({});
+
   async function togglePreorder(campus: Campus, value: boolean) {
     setPreorderLoading((prev) => ({ ...prev, [campus.id]: true }));
     const { error } = await createClient()
@@ -88,6 +90,16 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
       .update({ preorder_open: value })
       .eq("id", campus.id);
     setPreorderLoading((prev) => ({ ...prev, [campus.id]: false }));
+    if (!error) router.refresh();
+  }
+
+  async function toggleShift(campus: Campus, value: boolean) {
+    setShiftLoading((prev) => ({ ...prev, [campus.id]: true }));
+    const { error } = await createClient()
+      .from("campuses")
+      .update({ shift_active: value })
+      .eq("id", campus.id);
+    setShiftLoading((prev) => ({ ...prev, [campus.id]: false }));
     if (!error) router.refresh();
   }
 
@@ -138,20 +150,37 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
                 </button>
               </div>
 
-              {/* Pre-orders toggle row */}
-              <div className="flex items-center gap-3 rounded-xl border border-border bg-bg-muted px-4 py-2.5">
-                <CalendarClock className="h-4 w-4 text-primary shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-text">Pre-orders</p>
+              {/* Shift status & Pre-orders toggle rows */}
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="flex items-center gap-3 rounded-xl border border-border bg-bg-muted px-4 py-2.5">
+                  <Building2 className="h-4 w-4 text-primary shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-text">Live Shift</p>
+                  </div>
+                  <Badge tone={c.shift_active ? "success" : "warn"}>
+                    {c.shift_active ? "OPEN" : "CLOSED"}
+                  </Badge>
+                  <Switch
+                    checked={c.shift_active}
+                    onChange={(v) => toggleShift(c, v)}
+                    disabled={shiftLoading[c.id]}
+                  />
                 </div>
-                <Badge tone={c.preorder_open ? "success" : "neutral"}>
-                  {c.preorder_open ? "OPEN" : "CLOSED"}
-                </Badge>
-                <Switch
-                  checked={c.preorder_open}
-                  onChange={(v) => togglePreorder(c, v)}
-                  disabled={preorderLoading[c.id]}
-                />
+
+                <div className="flex items-center gap-3 rounded-xl border border-border bg-bg-muted px-4 py-2.5">
+                  <CalendarClock className="h-4 w-4 text-primary shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-text">Pre-orders</p>
+                  </div>
+                  <Badge tone={c.preorder_open ? "success" : "neutral"}>
+                    {c.preorder_open ? "OPEN" : "CLOSED"}
+                  </Badge>
+                  <Switch
+                    checked={c.preorder_open}
+                    onChange={(v) => togglePreorder(c, v)}
+                    disabled={preorderLoading[c.id]}
+                  />
+                </div>
               </div>
             </CardBody>
           </Card>

@@ -6,6 +6,8 @@ import { PreorderControl } from "@/components/admin/preorder-control";
 import { money } from "@/lib/utils";
 import { ShoppingBag, Wallet, Banknote, AlertTriangle } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminDashboard() {
   const campus = await myCampus();
   const campusId = campus?.id ?? "";

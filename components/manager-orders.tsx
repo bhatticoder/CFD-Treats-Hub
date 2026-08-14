@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { PageContainer } from "@/components/app-shell";
@@ -11,7 +12,16 @@ import type { Order } from "@/lib/types/models";
 type Filter = "all" | "pending" | "delivered";
 
 export function ManagerOrders({ orders }: { orders: Order[] }) {
+  const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
+
+  // Auto-refresh every 6 seconds to fetch newly placed orders live
+  useEffect(() => {
+    const timer = setInterval(() => {
+      router.refresh();
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [router]);
 
   // Sort by block then numeric room for an efficient delivery route.
   const sorted = [...orders].sort((a, b) => {

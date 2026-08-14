@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { money, cn } from "@/lib/utils";
@@ -15,6 +15,14 @@ export function AdminOrders({ orders }: { orders: Order[] }) {
   const router = useRouter();
   const [filter, setFilter] = useState<string>("all");
   const [busy, setBusy] = useState<string | null>(null);
+
+  // Auto-refresh every 6 seconds to fetch newly placed orders live for Admin
+  useEffect(() => {
+    const timer = setInterval(() => {
+      router.refresh();
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [router]);
 
   const filters = ["all", ...ORDER_STATUSES];
   const visible = filter === "all" ? orders : orders.filter((o) => o.order_status === filter);
