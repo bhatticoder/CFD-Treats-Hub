@@ -99,7 +99,8 @@ export function PreorderBrowser({
       <PageContainer max="max-w-3xl">
         <EmptyState
           icon={<CalendarClock className="h-14 w-14" />}
-          title="Check back when pre orders are open"
+          title="Pre-orders are OPEN!"
+          hint="No items available right now. Please check back shortly."
         />
       </PageContainer>
     );

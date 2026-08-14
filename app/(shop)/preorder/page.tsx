@@ -45,13 +45,23 @@ export default async function PreorderPage() {
     );
   }
 
-  const { data: items } = await supabase
+  let { data: items } = await supabase
     .from("items")
     .select("*, restaurants(name)")
     .eq("campus_id", p?.campus_id ?? "")
     .eq("is_preorder", true)
     .eq("is_available", true)
     .order("name");
+
+  if (!items || items.length === 0) {
+    const { data: fallback } = await supabase
+      .from("items")
+      .select("*, restaurants(name)")
+      .eq("campus_id", p?.campus_id ?? "")
+      .eq("is_available", true)
+      .order("name");
+    items = fallback;
+  }
 
   return (
     <PreorderBrowser
