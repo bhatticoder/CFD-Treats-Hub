@@ -5,6 +5,9 @@ import { Card, CardBody } from "@/components/ui/card";
 import { PreorderControl } from "@/components/admin/preorder-control";
 import { money } from "@/lib/utils";
 import { ShoppingBag, Wallet, Banknote, AlertTriangle } from "lucide-react";
+import type { Campus } from "@/lib/types/models";
+
+import { ShiftControl } from "@/components/admin/shift-control";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +15,10 @@ export default async function AdminDashboard() {
   const campus = await myCampus();
   const campusId = campus?.id ?? "";
   const supabase = await createClient();
+
+  const { data: campusesData } = await supabase.from("campuses").select("*").order("name");
+  const campuses = (campusesData as Campus[]) ?? [];
+
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
 
@@ -42,8 +49,10 @@ export default async function AdminDashboard() {
     <PageContainer>
       <h1 className="mb-1 text-2xl font-extrabold text-text">Dashboard</h1>
       <p className="mb-6 text-sm text-text-muted">Today at a glance</p>
+      {campuses.length > 0 && <ShiftControl campuses={campuses} />}
+
       {campus && (
-        <div className="mb-4">
+        <div className="mb-5">
           <PreorderControl campus={campus} compact />
         </div>
       )}

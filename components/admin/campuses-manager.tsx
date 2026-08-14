@@ -82,35 +82,65 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
   }
 
   const [shiftLoading, setShiftLoading] = useState<Record<string, boolean>>({});
+  const [toggleErr, setToggleErr] = useState<string | null>(null);
 
   async function togglePreorder(campus: Campus, value: boolean) {
+    setToggleErr(null);
     setPreorderLoading((prev) => ({ ...prev, [campus.id]: true }));
     const { error } = await createClient()
       .from("campuses")
       .update({ preorder_open: value })
       .eq("id", campus.id);
     setPreorderLoading((prev) => ({ ...prev, [campus.id]: false }));
-    if (!error) router.refresh();
+    if (error) setToggleErr(`Failed to update preorders for ${campus.name}: ${error.message}`);
+    else router.refresh();
   }
 
   async function toggleShift(campus: Campus, value: boolean) {
+    setToggleErr(null);
     setShiftLoading((prev) => ({ ...prev, [campus.id]: true }));
     const { error } = await createClient()
       .from("campuses")
       .update({ shift_active: value })
       .eq("id", campus.id);
     setShiftLoading((prev) => ({ ...prev, [campus.id]: false }));
-    if (!error) router.refresh();
+    if (error) setToggleErr(`Failed to update shift for ${campus.name}: ${error.message}`);
+    else router.refresh();
+  }
+
+  async function openAllShifts(value: boolean) {
+    setToggleErr(null);
+    setBusy(true);
+    const ids = campuses.map((c) => c.id);
+    const { error } = await createClient()
+      .from("campuses")
+      .update({ shift_active: value })
+      .in("id", ids);
+    setBusy(false);
+    if (error) setToggleErr(`Failed to update all shifts: ${error.message}`);
+    else router.refresh();
   }
 
   return (
     <PageContainer max="max-w-3xl">
-      <div className="mb-5 flex items-center justify-between">
-        <h1 className="text-2xl font-extrabold text-text">Campuses</h1>
-        <Button onClick={openNew}>
-          <Plus className="h-4 w-4" /> Add campus
-        </Button>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-extrabold text-text">Campuses</h1>
+          <p className="text-sm text-text-muted">Manage hostel campuses & live shift status</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => openAllShifts(true)}>
+            Open All Shifts
+          </Button>
+          <Button onClick={openNew}>
+            <Plus className="h-4 w-4" /> Add campus
+          </Button>
+        </div>
       </div>
+
+      {toggleErr && (
+        <p className="mb-4 rounded-xl bg-error/10 p-3 text-sm text-error">{toggleErr}</p>
+      )}
 
       {deleteError && (
         <p className="mb-4 rounded-xl bg-error/10 p-3 text-sm text-error">{deleteError}</p>

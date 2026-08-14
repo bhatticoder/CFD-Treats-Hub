@@ -29,20 +29,48 @@ export default function CartPage() {
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [campusClosed, setCampusClosed] = useState(false);
+  const [campusName, setCampusName] = useState<string | null>(null);
+
   useEffect(() => {
     (async () => {
       const supabase = createClient();
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) return;
-      const { data } = await supabase
+      
+      const { data: prof } = await supabase
         .from("profiles")
-        .select("room_number, block, campuses(payment_account_info)")
+        .select("room_number, block, campus_id, campuses(*)")
         .eq("id", userData.user.id)
         .maybeSingle();
-      if (data?.room_number) setRoom(data.room_number);
-      if (data?.block) setBlock(data.block);
-      const campus = data?.campuses as { payment_account_info?: string } | null;
+
+      if (prof?.room_number) setRoom(prof.room_number);
+      if (prof?.block) setBlock(prof.block);
+
+      let campus = prof?.campuses as { id?: string; name?: string; payment_account_info?: string; shift_active?: boolean } | null;
+
+      // Auto-heal missing profile campus_id if user doesn't have one set yet
+      if (!prof?.campus_id) {
+        const { data: activeCampuses } = await supabase
+          .from("campuses")
+          .select("*")
+          .eq("is_active", true)
+          .limit(1);
+        if (activeCampuses && activeCampuses.length > 0) {
+          const defaultCampus = activeCampuses[0];
+          await supabase
+            .from("profiles")
+            .update({ campus_id: defaultCampus.id })
+            .eq("id", userData.user.id);
+          campus = defaultCampus;
+        }
+      }
+
+      if (campus?.name) setCampusName(campus.name);
       if (campus?.payment_account_info) setAccount(campus.payment_account_info);
+      if (campus && campus.shift_active === false) {
+        setCampusClosed(true);
+      }
     })();
   }, []);
 
@@ -264,13 +292,31 @@ export default function CartPage() {
         </CardBody>
       </Card>
 
-      {error && <p className="mt-3 text-sm text-error">{error}</p>}
+      {campusClosed && (
+        <div className="mt-4 rounded-2xl border border-error/40 bg-error/10 p-4 text-center">
+          <p className="font-bold text-error">
+            ALL FINISHED FOR TODAY — {campusName ?? "Campus"} Shift is Closed
+          </p>
+          <p className="mt-1 text-xs text-text-muted">
+            The admin or manager has closed live orders for today. Turn ON “Live Shift” in Admin Panel → Campuses to accept orders!
+          </p>
+        </div>
+      )}
+
+      {error && !campusClosed && (
+        <div className="mt-4 rounded-xl border border-error/40 bg-error/10 p-4 text-center text-sm font-semibold text-error">
+          {error.includes("ALL FINISHED")
+            ? `ALL FINISHED FOR TODAY — Live shift is closed for ${campusName ?? "your campus"}. Turn ON Live Shift in Admin Panel → Campuses.`
+            : error}
+        </div>
+      )}
 
       <Button
         className="mt-5 w-full"
         size="lg"
         variant="success"
         loading={placing}
+        disabled={campusClosed}
         onClick={placeOrder}
       >
         <PartyPopper className="h-5 w-5" /> Place order
