@@ -48,7 +48,7 @@ export function ManagerShell({
     { href: "/manager", label: "Today's Orders", icon: ClipboardList, exact: true },
     { href: "/manager/discounts", label: "Discounts", icon: Tag },
     { href: "/manager/notify", label: "Notify", icon: Megaphone },
-    { href: "/manager/end-shift", label: "End Shift", icon: Power },
+    { href: "/manager/end-shift", label: "Shift Control", icon: Power },
   ];
 
   return (

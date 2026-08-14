@@ -3,17 +3,42 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Power } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import { PageContainer } from "@/components/app-shell";
-import { Badge, EmptyState } from "@/components/ui/misc";
+import { Badge, Switch, EmptyState } from "@/components/ui/misc";
 import { cn } from "@/lib/utils";
-import type { Order } from "@/lib/types/models";
+import type { Campus, Order } from "@/lib/types/models";
 
 type Filter = "all" | "pending" | "delivered";
 
-export function ManagerOrders({ orders }: { orders: Order[] }) {
+export function ManagerOrders({
+  orders,
+  campus,
+}: {
+  orders: Order[];
+  campus?: Campus | null;
+}) {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
+  const [shiftActive, setShiftActive] = useState(campus?.shift_active ?? true);
+  const [toggling, setToggling] = useState(false);
+
+  useEffect(() => {
+    if (campus?.shift_active !== undefined) {
+      setShiftActive(campus.shift_active);
+    }
+  }, [campus?.shift_active]);
+
+  async function toggleShift(v: boolean) {
+    if (!campus?.id) return;
+    setToggling(true);
+    setShiftActive(v);
+    const supabase = createClient();
+    await supabase.from("campuses").update({ shift_active: v }).eq("id", campus.id);
+    setToggling(false);
+    router.refresh();
+  }
 
   // Auto-refresh every 6 seconds to fetch newly placed orders live
   useEffect(() => {
@@ -40,6 +65,44 @@ export function ManagerOrders({ orders }: { orders: Order[] }) {
     <PageContainer max="max-w-4xl">
       <h1 className="text-2xl font-extrabold text-text">Today&apos;s Orders</h1>
       <p className="mb-4 text-sm text-text-muted">Sorted by block & room for routing</p>
+
+      {campus && (
+        <div
+          className={cn(
+            "mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4 transition-colors",
+            shiftActive
+              ? "border-success/40 bg-success/5"
+              : "border-error/40 bg-error/5",
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className={cn(
+                "grid h-10 w-10 place-items-center rounded-xl font-bold",
+                shiftActive ? "bg-success/20 text-success" : "bg-error/20 text-error",
+              )}
+            >
+              <Power className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-extrabold text-text">
+                {shiftActive ? "Live Shift is OPEN" : "ALL FINISHED FOR TODAY"}
+              </p>
+              <p className="text-xs text-text-muted">
+                {shiftActive
+                  ? "Customers can place orders now"
+                  : "Ordering is closed for today"}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Badge tone={shiftActive ? "success" : "error"}>
+              {shiftActive ? "OPEN" : "FINISHED"}
+            </Badge>
+            <Switch checked={shiftActive} onChange={toggleShift} disabled={toggling} />
+          </div>
+        </div>
+      )}
 
       <div className="mb-4 flex gap-2">
         {(["all", "pending", "delivered"] as Filter[]).map((f) => (
