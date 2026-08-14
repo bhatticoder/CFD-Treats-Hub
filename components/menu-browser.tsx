@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Moon, Plus, Minus, Check, CalendarClock, Store, X, ShoppingCart } from "lucide-react";
+import { Moon, Plus, Minus, Check, CalendarClock, Store, X, ShoppingCart, ArrowRight, Sparkles } from "lucide-react";
 import { CATEGORIES } from "@/lib/domain/constants";
 import { money, cn } from "@/lib/utils";
 import { useCart } from "@/lib/store/cart";
@@ -59,17 +60,45 @@ export function MenuBrowser({
       </div>
 
       {preordersOpen && (
-        <div className="mb-5 rounded-2xl border border-primary/50 bg-primary-soft/50 p-5 text-center">
-          <p className="text-lg font-extrabold text-primary">
-            Pre-Orders Open, Order Now! 👇🏻👇🏻
-          </p>
-          <a
-            href="/preorder"
-            className="mt-3 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-semibold text-on-primary hover:bg-primary-hover"
-          >
-            <CalendarClock className="h-5 w-5" /> Go to Pre-orders
-          </a>
-        </div>
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="mb-6 overflow-hidden rounded-2xl border-2 border-primary bg-gradient-to-r from-primary via-accent-warm to-primary p-0.5 shadow-lg shadow-primary/20"
+        >
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-[14px] bg-surface p-4 sm:p-5">
+            <div className="flex items-center gap-3.5 text-left w-full sm:w-auto">
+              <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
+                <CalendarClock className="h-6 w-6" />
+                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                </span>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary uppercase tracking-wide">
+                    Pre-orders Open
+                  </span>
+                  <Sparkles className="h-4 w-4 text-accent-warm animate-pulse" />
+                </div>
+                <h3 className="mt-0.5 text-lg font-black text-text leading-tight">
+                  Order Now for Tonight! 🍕🍔
+                </h3>
+                <p className="text-xs text-text-muted">
+                  Reserve your favorite treats early before slots fill up.
+                </p>
+              </div>
+            </div>
+
+            <Link
+              href="/preorder"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-extrabold text-on-primary shadow-md transition-all hover:bg-primary-hover hover:scale-105 active:scale-95 shrink-0"
+            >
+              <span>Go to Pre-orders</span>
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </motion.div>
       )}
 
       {!shiftActive && (
