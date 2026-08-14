@@ -1,6 +1,8 @@
 import { AdminShell } from "@/components/admin-shell";
 import { myCampus } from "@/lib/db/server-helpers";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminRootLayout({
   children,
 }: {

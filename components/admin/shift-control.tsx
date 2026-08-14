@@ -1,24 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Power, ArrowRight, Building2 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import { Card, CardBody } from "@/components/ui/card";
 import { Badge, Switch } from "@/components/ui/misc";
 import type { Campus } from "@/lib/types/models";
 
 export function ShiftControl({
   campus,
-  campuses,
+  campuses: initialCampuses,
 }: {
   campus?: Campus | null;
   campuses?: Campus[];
 }) {
   const router = useRouter();
-  const list = campuses ?? (campus ? [campus] : []);
+  const [campuses, setCampuses] = useState<Campus[]>(
+    initialCampuses ?? (campus ? [campus] : []),
+  );
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialCampuses && initialCampuses.length > 0) {
+      setCampuses(initialCampuses);
+      return;
+    }
+    // Client-side fallback fetch to guarantee campuses are loaded even if server prop was empty
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase.from("campuses").select("*").order("name");
+      if (data && data.length > 0) {
+        setCampuses(data as Campus[]);
+      }
+    })();
+  }, [initialCampuses]);
 
   async function toggleShift(targetCampus: Campus, value: boolean) {
     setLoading((prev) => ({ ...prev, [targetCampus.id]: true }));
@@ -38,6 +56,10 @@ export function ShiftControl({
         throw new Error(`Server Error: ${res.status} ${res.statusText}`);
       }
       if (!res.ok) throw new Error(data.error || "Failed to update shift");
+
+      setCampuses((prev) =>
+        prev.map((c) => (c.id === targetCampus.id ? { ...c, shift_active: value } : c)),
+      );
       router.refresh();
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
@@ -45,8 +67,6 @@ export function ShiftControl({
       setLoading((prev) => ({ ...prev, [targetCampus.id]: false }));
     }
   }
-
-  if (list.length === 0) return null;
 
   return (
     <Card className="mb-4">
@@ -67,7 +87,7 @@ export function ShiftControl({
         {err && <p className="text-xs text-error">{err}</p>}
 
         <div className="grid gap-2 sm:grid-cols-2">
-          {list.map((c) => (
+          {campuses.map((c) => (
             <div
               key={c.id}
               className="flex items-center justify-between gap-3 rounded-xl border border-border bg-bg-muted p-3"
