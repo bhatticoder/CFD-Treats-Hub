@@ -25,34 +25,38 @@ export function EndShift({
   const [shiftActive, setShiftActive] = useState(campus?.shift_active ?? true);
 
   async function toggleShift(value: boolean) {
-    if (!campus?.id) return;
     setBusy(true);
     setError(null);
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("campuses")
-      .update({ shift_active: value })
-      .eq("id", campus.id);
-    setBusy(false);
-    if (error) {
-      setError(error.message);
-    } else {
+    try {
+      const res = await fetch("/api/shift", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campusId: campus?.id, shiftActive: value }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update shift");
       setShiftActive(value);
       router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
     }
   }
 
   async function endShiftAndLogout() {
     setBusy(true);
     setError(null);
+    try {
+      await fetch("/api/shift", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campusId: campus?.id, shiftActive: false }),
+      });
+    } catch {
+      // ignore network error on logout
+    }
     const supabase = createClient();
-    if (campus?.id) {
-      await supabase.from("campuses").update({ shift_active: false }).eq("id", campus.id);
-    }
-    const { error: rpcErr } = await supabase.rpc("end_shift");
-    if (rpcErr && !rpcErr.message.includes("function")) {
-      // ignore function missing if table updated
-    }
     await supabase.auth.signOut();
     router.push("/login");
     router.refresh();

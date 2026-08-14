@@ -31,13 +31,22 @@ export function ManagerOrders({
   }, [campus?.shift_active]);
 
   async function toggleShift(v: boolean) {
-    if (!campus?.id) return;
     setToggling(true);
     setShiftActive(v);
-    const supabase = createClient();
-    await supabase.from("campuses").update({ shift_active: v }).eq("id", campus.id);
-    setToggling(false);
-    router.refresh();
+    try {
+      const res = await fetch("/api/shift", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campusId: campus?.id, shiftActive: v }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update shift");
+      router.refresh();
+    } catch (e) {
+      setShiftActive(!v);
+    } finally {
+      setToggling(false);
+    }
   }
 
   // Auto-refresh every 6 seconds to fetch newly placed orders live

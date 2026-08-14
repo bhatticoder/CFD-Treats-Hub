@@ -13,11 +13,13 @@ import {
   Palette,
   Store,
   ClipboardList,
+  Power,
 } from "lucide-react";
 import { AppShell, type NavItem } from "@/components/app-shell";
 
 const items: NavItem[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { href: "/admin/shift", label: "Shift Control", icon: Power },
   { href: "/admin/preorders", label: "Pre-orders", icon: ClipboardList },
   { href: "/admin/restaurants", label: "Restaurants", icon: Store },
   { href: "/admin/inventory", label: "Inventory", icon: Package },

@@ -99,26 +99,39 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
   async function toggleShift(campus: Campus, value: boolean) {
     setToggleErr(null);
     setShiftLoading((prev) => ({ ...prev, [campus.id]: true }));
-    const { error } = await createClient()
-      .from("campuses")
-      .update({ shift_active: value })
-      .eq("id", campus.id);
-    setShiftLoading((prev) => ({ ...prev, [campus.id]: false }));
-    if (error) setToggleErr(`Failed to update shift for ${campus.name}: ${error.message}`);
-    else router.refresh();
+    try {
+      const res = await fetch("/api/shift", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campusId: campus.id, shiftActive: value }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update shift");
+      router.refresh();
+    } catch (e) {
+      setToggleErr(`Failed to update shift for ${campus.name}: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setShiftLoading((prev) => ({ ...prev, [campus.id]: false }));
+    }
   }
 
   async function openAllShifts(value: boolean) {
     setToggleErr(null);
     setBusy(true);
-    const ids = campuses.map((c) => c.id);
-    const { error } = await createClient()
-      .from("campuses")
-      .update({ shift_active: value })
-      .in("id", ids);
-    setBusy(false);
-    if (error) setToggleErr(`Failed to update all shifts: ${error.message}`);
-    else router.refresh();
+    try {
+      const res = await fetch("/api/shift", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campusId: null, shiftActive: value }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update all shifts");
+      router.refresh();
+    } catch (e) {
+      setToggleErr(`Failed to update all shifts: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (

@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Power, ArrowRight } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { Card, CardBody } from "@/components/ui/card";
 import { Badge, Switch } from "@/components/ui/misc";
 import type { Campus } from "@/lib/types/models";
@@ -33,20 +32,21 @@ export function ShiftControl({
     setLoading(true);
     setErr(null);
     setActive(value);
-    const supabase = createClient();
-    
-    // Update all active campuses or target campus
-    const ids = list.length > 0 ? list.map((c) => c.id) : targetCampus ? [targetCampus.id] : [];
-    const { error } = await supabase
-      .from("campuses")
-      .update({ shift_active: value })
-      .in("id", ids);
 
-    setLoading(false);
-    if (error) {
-      setErr(error.message);
-    } else {
+    try {
+      const res = await fetch("/api/shift", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campusId: targetCampus?.id ?? null, shiftActive: value }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update shift");
       router.refresh();
+    } catch (e) {
+      setActive(!value);
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -71,7 +71,7 @@ export function ShiftControl({
         </div>
         <Switch checked={active} onChange={toggleShift} disabled={loading} />
         <Link
-          href="/admin/campuses"
+          href="/admin/shift"
           className="flex items-center gap-1 text-sm font-medium text-primary shrink-0"
         >
           Manage <ArrowRight className="h-4 w-4" />
