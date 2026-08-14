@@ -1,3 +1,4 @@
+// Build: 2026-08-14T18:21Z — force fresh deploy
 import { createClient } from "@/lib/supabase/server";
 import { myCampus } from "@/lib/db/server-helpers";
 import { PageContainer } from "@/components/app-shell";
