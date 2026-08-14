@@ -33,7 +33,13 @@ export function EndShift({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ campusId: campus?.id, shiftActive: value }),
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (err) {
+        throw new Error(`Server Error: ${res.status} ${res.statusText}`);
+      }
       if (!res.ok) throw new Error(data.error || "Failed to update shift");
       setShiftActive(value);
       router.refresh();
@@ -63,44 +69,13 @@ export function EndShift({
   }
 
   return (
-    <PageContainer max="max-w-lg">
-      <div className="mb-5 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold text-text">Shift &amp; Summary</h1>
-          <p className="text-sm text-text-muted">Tonight&apos;s shift status and orders summary</p>
-        </div>
-      </div>
+    <PageContainer max="max-w-2xl">
+      <h1 className="mb-1 text-2xl font-extrabold text-text">Shift & Summary</h1>
+      <p className="mb-6 text-sm text-text-muted">Tonight&apos;s shift status and orders summary</p>
 
-      {/* Live Shift Control Card */}
-      <Card className="mb-5 border-2 border-primary/30">
-        <CardBody className="p-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className={`grid h-12 w-12 place-items-center rounded-xl font-bold ${
-              shiftActive ? "bg-success/20 text-success" : "bg-error/20 text-error"
-            }`}>
-              <Power className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="font-extrabold text-text">
-                {shiftActive ? "Live Shift: OPEN" : "ALL FINISHED FOR TODAY"}
-              </p>
-              <p className="text-xs text-text-muted">
-                {shiftActive
-                  ? "Customers can currently order"
-                  : "Ordering is currently closed"}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge tone={shiftActive ? "success" : "error"}>
-              {shiftActive ? "OPEN" : "CLOSED"}
-            </Badge>
-            <Switch checked={shiftActive} onChange={toggleShift} disabled={busy} />
-          </div>
-        </CardBody>
-      </Card>
+      {error && <p className="mb-4 text-sm text-error">{error}</p>}
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="mb-8 grid gap-4 sm:grid-cols-2">
         <Stat icon={<CheckCircle2 className="text-success" />} label="Delivered" value={`${summary.delivered}`} />
         <Stat icon={<Clock className="text-error" />} label="Pending" value={`${summary.pending}`} />
         <Stat icon={<Banknote className="text-warn" />} label="COD cash" value={money(summary.cod)} />
@@ -115,47 +90,9 @@ export function EndShift({
 
       {error && <p className="mt-4 text-sm text-error">{error}</p>}
 
-      <div className="mt-6 space-y-3">
-        {shiftActive ? (
-          !confirming ? (
-            <Button
-              className="w-full"
-              size="lg"
-              variant="outline"
-              disabled={summary.pending > 0}
-              onClick={() => setConfirming(true)}
-            >
-              Close Shift (Set ALL FINISHED FOR TODAY)
-            </Button>
-          ) : (
-            <div className="rounded-2xl border border-error/40 bg-error/5 p-4">
-              <p className="mb-3 text-center text-sm font-semibold text-text">
-                Close ordering shift for customers (ALL FINISHED FOR TODAY)?
-              </p>
-              <div className="flex gap-3">
-                <Button variant="outline" className="flex-1" onClick={() => setConfirming(false)}>
-                  Cancel
-                </Button>
-                <Button variant="danger" className="flex-1" loading={busy} onClick={() => toggleShift(false)}>
-                  Confirm Close
-                </Button>
-              </div>
-            </div>
-          )
-        ) : (
-          <Button
-            className="w-full"
-            size="lg"
-            variant="success"
-            loading={busy}
-            onClick={() => toggleShift(true)}
-          >
-            Start / Re-Open Live Shift
-          </Button>
-        )}
-
+      <div className="mt-6">
         <Button
-          variant="ghost"
+          variant="outline"
           className="w-full text-text-muted"
           loading={busy}
           onClick={endShiftAndLogout}

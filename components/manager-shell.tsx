@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardList, Power, Tag, Megaphone } from "lucide-react";
+import { ClipboardList, Tag, Megaphone } from "lucide-react";
 import { AppShell, type NavItem } from "@/components/app-shell";
 
 export function ManagerShell({
@@ -16,7 +16,6 @@ export function ManagerShell({
     { href: "/manager", label: "Today's Orders", icon: ClipboardList, exact: true },
     { href: "/manager/discounts", label: "Discounts", icon: Tag },
     { href: "/manager/notify", label: "Notify", icon: Megaphone },
-    { href: "/manager/end-shift", label: "Shift Control", icon: Power },
   ];
 
   return (
