@@ -49,13 +49,10 @@ export default async function AdminDashboard() {
     <PageContainer>
       <h1 className="mb-1 text-2xl font-extrabold text-text">Dashboard</h1>
       <p className="mb-6 text-sm text-text-muted">Today at a glance</p>
-      {campuses.length > 0 && <ShiftControl campuses={campuses} />}
-
-      {campus && (
-        <div className="mb-5">
-          <PreorderControl campus={campus} compact />
-        </div>
-      )}
+      <div className="mb-5 space-y-4">
+        <ShiftControl campus={campus} campuses={campuses} />
+        {campus && <PreorderControl campus={campus} compact />}
+      </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((c) => (
           <Card key={c.label}>
