@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { AdminPreorders } from "@/components/admin/admin-preorders";
 import type { Campus, Order } from "@/lib/types/models";
 
+export const dynamic = "force-dynamic";
+
 export default async function PreordersPage() {
   const supabase = await createClient();
   // Admin sees every campus (RLS allows) so each can be opened/closed on its own.
