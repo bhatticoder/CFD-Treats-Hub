@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { validateEmail } from "@/lib/domain/validators";
-import { DEFAULT_DOMAIN_SUFFIX } from "@/lib/domain/constants";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { Card, CardBody } from "@/components/ui/card";
@@ -18,7 +17,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
 
   async function submit() {
-    const err = validateEmail(email, DEFAULT_DOMAIN_SUFFIX);
+    const err = validateEmail(email);
     if (err) return setError(err);
     if (!verified) return setError("Please complete the human check");
     setError(null);
@@ -53,12 +52,12 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <Label htmlFor="email">University email</Label>
+        <Label htmlFor="email">Email address</Label>
         <Input
           id="email"
           type="email"
           inputMode="email"
-          placeholder="f23-1234@cfd.nu.edu.pk"
+          placeholder="f23-1234@cfd.nu.edu.pk or admin@gmail.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && submit()}
