@@ -20,8 +20,9 @@ export default async function MenuPage() {
     .eq("id", user.id)
     .maybeSingle();
 
-  const p = profile as (Profile & { campuses?: Campus }) | null;
-  const campus = p?.campuses ?? null;
+  const p = profile as (Profile & { campuses?: Campus | Campus[] }) | null;
+  const rawCampus = p?.campuses ?? null;
+  const campus = Array.isArray(rawCampus) ? rawCampus[0] : rawCampus;
   const campusId = p?.campus_id;
 
   const preordersOpen = isPreorderOpen(campus);

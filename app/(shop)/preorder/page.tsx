@@ -21,8 +21,9 @@ export default async function PreorderPage() {
     .select("*, campuses(*)")
     .eq("id", user.id)
     .maybeSingle();
-  const p = profile as (Profile & { campuses?: Campus }) | null;
-  const campus = p?.campuses ?? null;
+  const p = profile as (Profile & { campuses?: Campus | Campus[] }) | null;
+  const rawCampus = p?.campuses ?? null;
+  const campus = Array.isArray(rawCampus) ? rawCampus[0] : rawCampus;
 
   // Closed → show the contact message instead of the ordering UI.
   if (!isPreorderOpen(campus)) {

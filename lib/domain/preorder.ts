@@ -2,15 +2,17 @@ import type { Campus } from "@/lib/types/models";
 
 /** Effective "are pre-orders open" — mirrors the SQL preorder_is_open():
  *  manual master switch OR inside the scheduled [opens_at, closes_at] window. */
-export function isPreorderOpen(campus: Campus | null | undefined): boolean {
+export function isPreorderOpen(campus: Campus | any | null | undefined): boolean {
   if (!campus) return false;
-  if (campus.preorder_open) return true;
-  if (!campus.preorder_opens_at) return false;
+  const c = Array.isArray(campus) ? campus[0] : campus;
+  if (!c) return false;
+  if (c.preorder_open) return true;
+  if (!c.preorder_opens_at) return false;
   const now = Date.now();
-  const opens = new Date(campus.preorder_opens_at).getTime();
+  const opens = new Date(c.preorder_opens_at).getTime();
   if (now < opens) return false;
-  if (campus.preorder_closes_at) {
-    return now <= new Date(campus.preorder_closes_at).getTime();
+  if (c.preorder_closes_at) {
+    return now <= new Date(c.preorder_closes_at).getTime();
   }
   return true;
 }

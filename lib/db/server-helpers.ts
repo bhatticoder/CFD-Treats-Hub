@@ -27,8 +27,10 @@ export const myProfileWithCampus = cache(async (): Promise<
     .eq("id", user.id)
     .maybeSingle();
   if (!data) return null;
-  const row = data as Profile & { campuses?: Campus | null };
-  return { ...row, campus: row.campuses ?? null };
+  const row = data as Profile & { campuses?: Campus | Campus[] | null };
+  const rawCampus = row.campuses;
+  const campus = Array.isArray(rawCampus) ? rawCampus[0] : rawCampus;
+  return { ...row, campus: campus ?? null };
 });
 
 /** The current user's profile (server-side). Cached. */

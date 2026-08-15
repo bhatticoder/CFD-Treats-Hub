@@ -47,7 +47,8 @@ export default function CartPage() {
       if (prof?.room_number) setRoom(prof.room_number);
       if (prof?.block) setBlock(prof.block);
 
-      let campus = prof?.campuses as { id?: string; name?: string; payment_account_info?: string; shift_active?: boolean } | null;
+      let rawCampus = prof?.campuses;
+      let campus = (Array.isArray(rawCampus) ? rawCampus[0] : rawCampus) as { id?: string; name?: string; payment_account_info?: string; shift_active?: boolean } | null;
 
       // Auto-heal missing profile campus_id if user doesn't have one set yet
       if (!prof?.campus_id) {
