@@ -20,11 +20,34 @@ export default function LoginPage() {
     const err = validateEmail(email);
     if (err) return setError(err);
     if (!verified) return setError("Please complete the human check");
+    
     setError(null);
     setLoading(true);
+
+    const cleanEmail = email.trim().toLowerCase();
+    const isInternal = cleanEmail.endsWith("@cfd.nu.edu.pk");
     const supabase = createClient();
+
+    if (!isInternal) {
+      // Check if external email is pre-provisioned as admin/manager
+      const { data: isAuthorized, error: rpcError } = await supabase.rpc(
+        "check_external_auth_role",
+        { p_email: cleanEmail }
+      );
+
+      if (rpcError) {
+        setLoading(false);
+        return setError("Unable to verify authorization. Please try again.");
+      }
+
+      if (!isAuthorized) {
+        setLoading(false);
+        return setError("Unauthorized external email. Customer accounts must use @cfd.nu.edu.pk");
+      }
+    }
+
     const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim().toLowerCase(),
+      email: cleanEmail,
       options: {
         shouldCreateUser: true,
         // Free-tier Supabase emails a magic link → this is where it lands.
@@ -33,7 +56,7 @@ export default function LoginPage() {
     });
     setLoading(false);
     if (error) return setError(error.message);
-    router.push(`/verify?email=${encodeURIComponent(email.trim().toLowerCase())}`);
+    router.push(`/verify?email=${encodeURIComponent(cleanEmail)}`);
   }
 
   return (
