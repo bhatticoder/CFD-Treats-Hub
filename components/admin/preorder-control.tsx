@@ -47,9 +47,19 @@ export function PreorderControl({
   const effectiveOpen = manual || scheduledOpen;
 
   async function update(patch: Record<string, unknown>) {
-    const { error } = await createClient().from("campuses").update(patch).eq("id", campus.id);
-    if (error) setMsg(error.message);
-    else router.refresh();
+    const { data, error } = await createClient()
+      .from("campuses")
+      .update(patch)
+      .eq("id", campus.id)
+      .select();
+
+    if (error) {
+      setMsg(error.message);
+    } else if (!data || data.length === 0) {
+      setMsg("Update failed: Row Level Security (RLS) blocked the update or campus not found.");
+    } else {
+      router.refresh();
+    }
   }
 
   async function toggleManual(v: boolean) {
