@@ -47,24 +47,29 @@ export function PreorderControl({
   const effectiveOpen = manual || scheduledOpen;
 
   async function update(patch: Record<string, unknown>) {
-    const { data, error } = await createClient()
-      .from("campuses")
-      .update(patch)
-      .eq("id", campus.id)
-      .select();
-
-    if (error) {
-      setMsg(error.message);
-    } else if (!data || data.length === 0) {
-      setMsg("Update failed: Row Level Security (RLS) blocked the update or campus not found.");
-    } else {
-      router.refresh();
+    setSaving(true);
+    setMsg(null);
+    try {
+      const { updateCampusPreorderState } = await import("@/app/(admin)/admin/preorders/actions");
+      const res = await updateCampusPreorderState(campus.id, patch);
+      
+      if (res?.error) {
+        setMsg(res.error);
+        // Revert UI optimistic update if failed
+        setManual(campus.preorder_open);
+      } else {
+        router.refresh();
+      }
+    } catch (err: any) {
+      setMsg(err.message || "Failed to update");
+      setManual(campus.preorder_open);
+    } finally {
+      setSaving(false);
     }
   }
 
   async function toggleManual(v: boolean) {
     setManual(v);
-    setMsg(null);
     await update({ preorder_open: v });
   }
 
