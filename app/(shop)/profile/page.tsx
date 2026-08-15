@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import { PageContainer } from "@/components/app-shell";
 import { Card, CardBody } from "@/components/ui/card";
 import { LogoutButton } from "@/components/logout-button";
@@ -9,10 +10,13 @@ export default async function ProfilePage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
   const { data } = await supabase
     .from("profiles")
     .select("*, campuses(name)")
-    .eq("id", user!.id)
+    .eq("id", user.id)
     .maybeSingle();
   const p = data as (Profile & { campuses?: { name: string } }) | null;
 

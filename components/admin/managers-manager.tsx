@@ -26,6 +26,9 @@ export function ManagersManager({
   const [campusId, setCampusId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deactivating, setDeactivating] = useState<Profile | null>(null);
+  const [deactivateError, setDeactivateError] = useState<string | null>(null);
+  const [isDeactivating, setIsDeactivating] = useState(false);
 
   async function add() {
     if (!email.trim() || !campusId) return setError("Email and campus are required");
@@ -45,16 +48,25 @@ export function ManagersManager({
     router.refresh();
   }
 
-  async function deactivate(m: Profile) {
-    if (!confirm(`Remove ${m.full_name ?? m.email}? They will be signed out and blocked from logging in.`)) return;
+  function confirmDeactivate(m: Profile) {
+    setDeactivateError(null);
+    setDeactivating(m);
+  }
+
+  async function executeDeactivate() {
+    if (!deactivating) return;
+    setIsDeactivating(true);
+    setDeactivateError(null);
     const { error } = await createClient()
       .from("profiles")
       .update({ is_active: false })
-      .eq("id", m.id);
+      .eq("id", deactivating.id);
+    setIsDeactivating(false);
     if (error) {
-      alert(`Could not remove: ${error.message}`);
+      setDeactivateError(`Could not remove: ${error.message}`);
       return;
     }
+    setDeactivating(null);
     router.refresh();
   }
 
@@ -85,7 +97,7 @@ export function ManagersManager({
                   <p className="text-sm text-text-muted">{m.email}</p>
                 </div>
                 {m.is_active && (
-                  <button onClick={() => deactivate(m)} className="p-2 text-error" title="Remove">
+                  <button onClick={() => confirmDeactivate(m)} className="p-2 text-error/70 hover:bg-error/10 hover:text-error rounded-xl transition-colors" title="Remove">
                     <UserX className="h-5 w-5" />
                   </button>
                 )}
@@ -122,8 +134,25 @@ export function ManagersManager({
           <p className="text-xs text-text-faint">
             The manager signs in with an email OTP (same as customers). No password needed.
           </p>
-          {error && <p className="text-sm text-error">{error}</p>}
+          {error && <p className="text-sm text-error mt-4">{error}</p>}
         </div>
+      </Modal>
+
+      <Modal
+        open={deactivating !== null}
+        onClose={() => !isDeactivating && setDeactivating(null)}
+        title="Remove Manager"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setDeactivating(null)} disabled={isDeactivating}>Cancel</Button>
+            <Button variant="danger" loading={isDeactivating} onClick={executeDeactivate}>Remove</Button>
+          </>
+        }
+      >
+        <p className="text-sm text-text-muted">
+          Are you sure you want to remove &quot;{deactivating?.full_name ?? deactivating?.email}&quot;? They will be signed out and blocked from logging in.
+        </p>
+        {deactivateError && <p className="text-sm text-error mt-4">{deactivateError}</p>}
       </Modal>
     </PageContainer>
   );

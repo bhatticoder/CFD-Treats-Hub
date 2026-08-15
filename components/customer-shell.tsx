@@ -16,7 +16,10 @@ export function CustomerShell({
 }) {
   const lines = useCart((s) => s.lines);
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(t);
+  }, []);
   const count = mounted ? lines.reduce((n, l) => n + l.quantity, 0) : 0;
 
   const items: NavItem[] = [

@@ -24,6 +24,7 @@ type Draft = {
   custom_instruction: string;
   is_available: boolean;
   restaurant_id: string;
+  campus_id: string;
   expected_arrival: string;
   is_preorder: boolean;
 };
@@ -38,6 +39,7 @@ const empty: Draft = {
   custom_instruction: "",
   is_available: true,
   restaurant_id: "",
+  campus_id: "",
   expected_arrival: "",
   is_preorder: false,
 };
@@ -45,11 +47,11 @@ const empty: Draft = {
 export function InventoryManager({
   items,
   restaurants,
-  campusId,
+  campuses,
 }: {
   items: Item[];
   restaurants: Restaurant[];
-  campusId: string;
+  campuses: import("@/lib/types/models").Campus[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -60,6 +62,10 @@ export function InventoryManager({
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  const [deleting, setDeleting] = useState<Item | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   function openNew() {
     setEditing(null);
@@ -81,6 +87,7 @@ export function InventoryManager({
       custom_instruction: item.custom_instruction ?? "",
       is_available: item.is_available,
       restaurant_id: item.restaurant_id ?? "",
+      campus_id: item.campus_id ?? "",
       expected_arrival: item.expected_arrival ?? "",
       is_preorder: item.is_preorder,
     });
@@ -92,6 +99,7 @@ export function InventoryManager({
 
   async function save() {
     if (!draft.name.trim()) return setError("Name is required");
+    if (!draft.campus_id) return setError("Campus is required");
     setBusy(true);
     setError(null);
     const supabase = createClient();
@@ -115,7 +123,7 @@ export function InventoryManager({
         custom_instruction: draft.custom_instruction.trim() || null,
         is_available: draft.is_available,
         image_url: imageUrl,
-        campus_id: campusId,
+        campus_id: draft.campus_id,
         restaurant_id: draft.restaurant_id || null,
         expected_arrival: draft.expected_arrival.trim() || null,
         is_preorder: draft.is_preorder,
@@ -137,13 +145,22 @@ export function InventoryManager({
     await createClient().from("items").update({ is_available: !item.is_available }).eq("id", item.id);
     router.refresh();
   }
-  async function del(item: Item) {
-    if (!confirm(`Delete "${item.name}"?`)) return;
-    const { error: delErr } = await createClient().from("items").delete().eq("id", item.id);
+  function confirmDelete(item: Item) {
+    setDeleteError(null);
+    setDeleting(item);
+  }
+
+  async function executeDelete() {
+    if (!deleting) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+    const { error: delErr } = await createClient().from("items").delete().eq("id", deleting.id);
+    setIsDeleting(false);
     if (delErr) {
-      setError(`Cannot delete "${item.name}": ${delErr.message}`);
+      setDeleteError(`Cannot delete "${deleting.name}": ${delErr.message}`);
       return;
     }
+    setDeleting(null);
     router.refresh();
   }
 
@@ -207,6 +224,7 @@ export function InventoryManager({
                 <div className="min-w-0 flex-1">
                   <p className="flex flex-wrap items-center gap-2 font-semibold text-text">
                     {item.name}
+                    <Badge tone="neutral">{campuses.find((c) => c.id === item.campus_id)?.name ?? "Global"}</Badge>
                     {item.is_preorder && <Badge tone="primary">Pre-order</Badge>}
                     {!item.is_available && <Badge tone="error">Hidden</Badge>}
                   </p>
@@ -221,7 +239,10 @@ export function InventoryManager({
                 <button onClick={() => openEdit(item)} className="p-2 text-primary">
                   <Pencil className="h-5 w-5" />
                 </button>
-                <button onClick={() => del(item)} className="p-2 text-error">
+                <button
+                  onClick={() => confirmDelete(item)}
+                  className="p-1.5 text-error hover:bg-error/10 hover:text-error rounded-xl transition-colors"
+                >
                   <Trash2 className="h-5 w-5" />
                 </button>
               </CardBody>
@@ -287,7 +308,7 @@ export function InventoryManager({
             <div>
               <Label>Category</Label>
               <Select value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })}>
-                {CATEGORIES.filter((c) => c !== "All").map((c) => (
+                {CATEGORIES.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </Select>
@@ -295,19 +316,27 @@ export function InventoryManager({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Restaurant</Label>
-              <Select
-                value={draft.restaurant_id}
-                onChange={(e) => setDraft({ ...draft, restaurant_id: e.target.value })}
-              >
-                <option value="">None</option>
-                {restaurants.map((r) => (
-                  <option key={r.id} value={r.id}>{r.name}</option>
+              <Label>Campus</Label>
+              <Select value={draft.campus_id} onChange={(e) => setDraft({ ...draft, campus_id: e.target.value })}>
+                <option value="">Select Campus</option>
+                {campuses.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </Select>
             </div>
             <div>
-              <Label>Expected arrival</Label>
+              <Label>Restaurant (optional)</Label>
+              <Select value={draft.restaurant_id} onChange={(e) => setDraft({ ...draft, restaurant_id: e.target.value })}>
+                <option value="">None (In-house)</option>
+                {restaurants.filter(r => r.campus_id === draft.campus_id || !draft.campus_id).map((r) => (
+                  <option key={r.id} value={r.id}>{r.name}</option>
+                ))}
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-1">
+            <div>
+              <Label>Expected arrival (optional)</Label>
               <Input
                 placeholder="e.g. 9:30 PM"
                 value={draft.expected_arrival}
@@ -333,8 +362,25 @@ export function InventoryManager({
             </div>
             <Switch checked={draft.is_preorder} onChange={(v) => setDraft({ ...draft, is_preorder: v })} />
           </div>
-          {error && <p className="text-sm text-error">{error}</p>}
+          {error && <p className="text-sm text-error mt-4">{error}</p>}
         </div>
+      </Modal>
+
+      <Modal
+        open={deleting !== null}
+        onClose={() => !isDeleting && setDeleting(null)}
+        title="Delete Item"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setDeleting(null)} disabled={isDeleting}>Cancel</Button>
+            <Button variant="danger" loading={isDeleting} onClick={executeDelete}>Delete</Button>
+          </>
+        }
+      >
+        <p className="text-sm text-text-muted">
+          Are you sure you want to delete &quot;{deleting?.name}&quot;?
+        </p>
+        {deleteError && <p className="text-sm text-error mt-4">{deleteError}</p>}
       </Modal>
     </PageContainer>
   );

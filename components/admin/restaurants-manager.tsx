@@ -13,20 +13,28 @@ import type { Restaurant } from "@/lib/types/models";
 
 export function RestaurantsManager({
   restaurants,
-  campusId,
+  campuses,
 }: {
   restaurants: Restaurant[];
-  campusId: string;
+  campuses: import("@/lib/types/models").Campus[];
 }) {
   const router = useRouter();
   const [name, setName] = useState("");
+  const [campusId, setCampusId] = useState("");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function add() {
-    if (!name.trim()) return;
+    if (!name.trim()) return setError("Name is required");
+    if (!campusId) return setError("Campus is required");
     setBusy(true);
-    await createClient().from("restaurants").insert({ campus_id: campusId, name: name.trim() });
+    setError(null);
+    const { error: insertErr } = await createClient().from("restaurants").insert({ campus_id: campusId, name: name.trim() });
     setBusy(false);
+    if (insertErr) {
+      setError(insertErr.message);
+      return;
+    }
     setName("");
     router.refresh();
   }
@@ -43,11 +51,24 @@ export function RestaurantsManager({
       </p>
 
       <Card className="mb-5">
-        <CardBody className="flex gap-2">
-          <Input placeholder="Restaurant name" value={name} onChange={(e) => setName(e.target.value)} />
-          <Button loading={busy} onClick={add}>
-            <Plus className="h-4 w-4" /> Add
-          </Button>
+        <CardBody>
+          <div className="flex gap-2">
+            <Input placeholder="Restaurant name" value={name} onChange={(e) => setName(e.target.value)} />
+            <select
+              className="h-11 rounded-xl border border-border bg-surface px-4 text-sm focus:border-primary focus:outline-none"
+              value={campusId}
+              onChange={(e) => setCampusId(e.target.value)}
+            >
+              <option value="">Select Campus</option>
+              {campuses.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <Button loading={busy} onClick={add}>
+              <Plus className="h-4 w-4" /> Add
+            </Button>
+          </div>
+          {error && <p className="mt-2 text-sm text-error">{error}</p>}
         </CardBody>
       </Card>
 
@@ -61,7 +82,10 @@ export function RestaurantsManager({
                 <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary-soft text-primary">
                   <Store className="h-5 w-5" />
                 </div>
-                <p className="flex-1 font-semibold text-text">{r.name}</p>
+                <div className="flex-1">
+                  <p className="font-semibold text-text">{r.name}</p>
+                  <p className="text-xs text-text-muted">{campuses.find((c) => c.id === r.campus_id)?.name ?? "Unknown Campus"}</p>
+                </div>
                 <Badge tone={r.is_active ? "success" : "neutral"}>
                   {r.is_active ? "Active" : "Hidden"}
                 </Badge>

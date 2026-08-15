@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CalendarClock, ArrowRight } from "lucide-react";
@@ -33,10 +33,17 @@ export function PreorderControl({
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
+  // Bug #14 fix: avoid impure Date.now() during render
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => { setNow(Date.now()); }, 30000);
+    return () => clearInterval(timer);
+  }, []);
+
   const scheduledOpen =
     !!opensAt &&
-    Date.now() >= new Date(opensAt).getTime() &&
-    (!closesAt || Date.now() <= new Date(closesAt).getTime());
+    now >= new Date(opensAt).getTime() &&
+    (!closesAt || now <= new Date(closesAt).getTime());
   const effectiveOpen = manual || scheduledOpen;
 
   async function update(patch: Record<string, unknown>) {

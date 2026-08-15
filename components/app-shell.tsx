@@ -39,7 +39,10 @@ export function AppShell({
   const [drawerOpen, setDrawerOpen] = React.useState(false);
 
   // Close the mobile drawer whenever the route changes.
-  React.useEffect(() => setDrawerOpen(false), [pathname]);
+  React.useEffect(() => {
+    const t = setTimeout(() => setDrawerOpen(false), 0);
+    return () => clearTimeout(t);
+  }, [pathname]);
 
   // Apply the campus's configured theme colour live (Brief §5.4).
   React.useEffect(() => {
@@ -155,7 +158,33 @@ export function AppShell({
         </header>
 
         {/* Content */}
-        <main className="min-w-0 flex-1">{children}</main>
+        <main className="min-w-0 flex-1 pb-18 md:pb-0">{children}</main>
+
+        {/* Bottom tab bar (mobile) — Bug #15 fix */}
+        <nav className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t border-border bg-surface py-1.5 md:hidden">
+          {items.slice(0, 5).map((it) => {
+            const active = isActive(pathname, it);
+            const Icon = it.icon;
+            return (
+              <Link
+                key={it.href}
+                href={it.href}
+                className={cn(
+                  "relative flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] transition-colors",
+                  active ? "font-semibold text-primary" : "text-text-muted",
+                )}
+              >
+                <Icon className="h-5 w-5" />
+                <span>{it.label}</span>
+                {it.badge ? (
+                  <span className="absolute -top-0.5 right-0 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-0.5 text-[9px] font-bold text-on-primary">
+                    {it.badge}
+                  </span>
+                ) : null}
+              </Link>
+            );
+          })}
+        </nav>
       </div>
 
       {/* Drawer (mobile) */}

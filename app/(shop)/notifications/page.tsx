@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { myProfileWithCampus } from "@/lib/db/server-helpers";
 import { PageContainer } from "@/components/app-shell";
 import { EmptyState } from "@/components/ui/misc";
 import type { AppNotification } from "@/lib/types/models";
@@ -6,11 +7,21 @@ import { Bell, Tag } from "lucide-react";
 
 export default async function NotificationsPage() {
   const supabase = await createClient();
-  const { data } = await supabase
+  const profileWithCampus = await myProfileWithCampus();
+  const campusId = profileWithCampus?.campus_id;
+
+  // Bug #5 fix: scope notifications to user's own campus
+  let query = supabase
     .from("notifications")
     .select("*")
     .order("created_at", { ascending: false })
     .limit(30);
+
+  if (campusId) {
+    query = query.eq("campus_id", campusId);
+  }
+
+  const { data } = await query;
   const items = (data as AppNotification[]) ?? [];
 
   return (
@@ -40,3 +51,4 @@ export default async function NotificationsPage() {
     </PageContainer>
   );
 }
+

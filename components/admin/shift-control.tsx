@@ -33,25 +33,28 @@ export function ShiftControl({
   // Always try to fetch campuses client-side to guarantee they load
   useEffect(() => {
     if (initialCampuses && initialCampuses.length > 0) {
-      setCampuses(initialCampuses);
-      return;
+      const t = setTimeout(() => setCampuses(initialCampuses), 0);
+      return () => clearTimeout(t);
     }
     // Fallback: fetch all campuses directly from Supabase
-    setFetchingCampuses(true);
-    const supabase = createClient();
-    supabase
-      .from("campuses")
-      .select("*")
-      .order("name")
-      .then(({ data, error }) => {
-        if (data && data.length > 0) {
-          setCampuses(data as Campus[]);
-        }
-        if (error) {
-          setErr(`Could not load campuses: ${error.message}`);
-        }
-        setFetchingCampuses(false);
-      });
+    const t2 = setTimeout(() => {
+      setFetchingCampuses(true);
+      const supabase = createClient();
+      supabase
+        .from("campuses")
+        .select("*")
+        .order("name")
+        .then(({ data, error }) => {
+          if (data && data.length > 0) {
+            setCampuses(data as Campus[]);
+          }
+          if (error) {
+            setErr(`Could not load campuses: ${error.message}`);
+          }
+          setFetchingCampuses(false);
+        });
+    }, 0);
+    return () => clearTimeout(t2);
   }, [initialCampuses]);
 
   async function toggleShift(targetCampus: Campus, value: boolean) {

@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardBody } from "@/components/ui/card";
 
-// Supabase Email OTP length (Auth → Providers → Email → "Email OTP length").
-// Keep this in sync with that setting.
-const OTP_LENGTH = 8;
+// Supabase Email OTP length — default is 6 digits.
+// Accepts 6–10 to handle non-default configurations.
+const OTP_LENGTH = 6;
+const OTP_RE = /^\d{6,10}$/;
 
 function VerifyInner() {
   const router = useRouter();
@@ -83,13 +84,13 @@ function VerifyInner() {
         <Input
           className="mt-5 text-center text-2xl tracking-[0.4em]"
           inputMode="numeric"
-          maxLength={OTP_LENGTH}
+          maxLength={10}
           value={code}
           onChange={(e) => {
-            const v = e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH);
+            const v = e.target.value.replace(/\D/g, "").slice(0, 10);
             setCode(v);
             setError(null);
-            if (v.length === OTP_LENGTH) setTimeout(() => verify(v), 50);
+            if (OTP_RE.test(v)) setTimeout(() => verify(v), 50);
           }}
           placeholder={"•".repeat(OTP_LENGTH)}
         />

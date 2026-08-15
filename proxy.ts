@@ -47,6 +47,9 @@ export async function proxy(request: NextRequest) {
 
   // Unauthenticated → only auth pages allowed.
   if (!user) {
+    if (path.startsWith("/api")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     if (isAuthPath) return response;
     return redirect(request, "/login");
   }
@@ -60,11 +63,17 @@ export async function proxy(request: NextRequest) {
 
   // No profile row yet → must complete registration.
   if (!profile) {
+    if (path.startsWith("/api")) {
+      return NextResponse.json({ error: "Profile incomplete" }, { status: 403 });
+    }
     return path === "/register" ? response : redirect(request, "/register");
   }
   // Deactivated account → end the session for real. signOut()'s cleared cookies
   // don't survive onto a fresh redirect response, so clear them explicitly.
   if (profile.is_active === false) {
+    if (path.startsWith("/api")) {
+      return NextResponse.json({ error: "Account deactivated" }, { status: 403 });
+    }
     const res = redirect(request, "/login?reason=deactivated");
     for (const c of request.cookies.getAll()) {
       if (c.name.startsWith("sb-") && c.name.includes("-auth-token")) {
@@ -73,6 +82,8 @@ export async function proxy(request: NextRequest) {
     }
     return res;
   }
+
+  if (path.startsWith("/api")) return response;
 
   const role = profile.role as Role;
   const home = homeFor(role);

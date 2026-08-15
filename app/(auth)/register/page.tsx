@@ -38,8 +38,7 @@ export default function RegisterPage() {
     })();
   }, [router]);
 
-  // Hostels must match the registered gender (Brief §5.3).
-  const campusOptions = campuses.filter((c) => !gender || c.gender === gender);
+  // Allow user to see all campuses. Validation handles domains.
 
   async function submit() {
     setError(null);
@@ -135,12 +134,11 @@ export default function RegisterPage() {
             <Select
               value={campusId}
               onChange={(e) => setCampusId(e.target.value)}
-              disabled={!gender}
             >
               <option value="">
-                {gender ? "Select…" : "Choose gender first"}
+                Select…
               </option>
-              {campusOptions.map((c) => (
+              {campuses.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>

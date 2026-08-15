@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Minus, Plus, Trash2, Upload, PartyPopper } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { useCart } from "@/lib/store/cart";
+import { useCart, CART_TTL } from "@/lib/store/cart";
 import { computeTotals, effectivePrice } from "@/lib/domain/pricing";
 import { HOSTEL_BLOCKS, COD_EXTRA_CHARGE } from "@/lib/domain/constants";
 import { validateRoom } from "@/lib/domain/validators";
@@ -19,7 +19,7 @@ import { ShoppingCart } from "lucide-react";
 
 export default function CartPage() {
   const router = useRouter();
-  const { lines, increment, decrement, remove, clear } = useCart();
+  const { lines, increment, decrement, remove, clear, refreshItems, lastRefreshed } = useCart();
   const [room, setRoom] = useState("");
   const [block, setBlock] = useState<string>(HOSTEL_BLOCKS[0]);
   const [method, setMethod] = useState<"online" | "cod">("online");
@@ -71,7 +71,21 @@ export default function CartPage() {
       if (campus && campus.shift_active === false) {
         setCampusClosed(true);
       }
+
+      // Bug #12 fix: refresh cart items against the DB if stale
+      const cartLines = useCart.getState().lines;
+      if (cartLines.length > 0 && (Date.now() - lastRefreshed > CART_TTL)) {
+        const itemIds = cartLines.map((l) => l.item.id);
+        const { data: freshItems } = await supabase
+          .from("items")
+          .select("*")
+          .in("id", itemIds);
+        if (freshItems) {
+          refreshItems(freshItems);
+        }
+      }
     })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const totals = computeTotals(lines, { isCod: method === "cod" });

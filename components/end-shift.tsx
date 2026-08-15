@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Banknote, CreditCard, Clock, Power } from "lucide-react";
+import { CheckCircle2, Banknote, CreditCard, Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { money } from "@/lib/utils";
 import { PageContainer } from "@/components/app-shell";
 import { Card, CardBody } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge, Switch } from "@/components/ui/misc";
+import { Switch } from "@/components/ui/misc";
 import type { Campus } from "@/lib/types/models";
 
 export function EndShift({
@@ -20,7 +20,6 @@ export function EndShift({
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shiftActive, setShiftActive] = useState(campus?.shift_active ?? true);
 
@@ -37,7 +36,7 @@ export function EndShift({
       let data;
       try {
         data = JSON.parse(text);
-      } catch (err) {
+      } catch {
         throw new Error(`Server Error: ${res.status} ${res.statusText}`);
       }
       if (!res.ok) throw new Error(data.error || "Failed to update shift");
@@ -90,7 +89,23 @@ export function EndShift({
 
       {error && <p className="mt-4 text-sm text-error">{error}</p>}
 
-      <div className="mt-6">
+      <div className="mt-6 space-y-4">
+        <Card>
+          <CardBody className="flex items-center justify-between p-4">
+            <div>
+              <p className="font-semibold text-text">Campus Shift Status</p>
+              <p className="text-xs text-text-muted">
+                {shiftActive ? "Customers can place orders." : "Ordering is paused."}
+              </p>
+            </div>
+            <Switch
+              checked={shiftActive}
+              onChange={toggleShift}
+              disabled={busy}
+            />
+          </CardBody>
+        </Card>
+
         <Button
           variant="outline"
           className="w-full text-text-muted"

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import { PreorderBrowser } from "@/components/preorder-browser";
 import { PageContainer } from "@/components/app-shell";
 import { isPreorderOpen, whatsappLink } from "@/lib/domain/preorder";
@@ -12,10 +13,13 @@ export default async function PreorderPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("*, campuses(*)")
-    .eq("id", user!.id)
+    .eq("id", user.id)
     .maybeSingle();
   const p = profile as (Profile & { campuses?: Campus }) | null;
   const campus = p?.campuses ?? null;

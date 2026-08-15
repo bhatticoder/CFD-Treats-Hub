@@ -1,27 +1,30 @@
 import { createClient } from "@/lib/supabase/server";
-import { myProfile } from "@/lib/db/server-helpers";
 import { InventoryManager } from "@/components/admin/inventory-manager";
-import type { Item, Restaurant } from "@/lib/types/models";
+import type { Item, Restaurant, Campus } from "@/lib/types/models";
 
 export default async function InventoryPage() {
-  const profile = await myProfile();
-  const campusId = profile?.campus_id ?? "";
   const supabase = await createClient();
-  const { data } = await supabase
+  
+  const { data: items } = await supabase
     .from("items")
     .select("*, restaurants(name)")
-    .eq("campus_id", campusId)
     .order("name");
+    
   const { data: restaurants } = await supabase
     .from("restaurants")
     .select("*")
-    .eq("campus_id", campusId)
     .order("name");
+    
+  const { data: campuses } = await supabase
+    .from("campuses")
+    .select("*")
+    .order("name");
+    
   return (
     <InventoryManager
-      items={(data as Item[]) ?? []}
+      items={(items as Item[]) ?? []}
       restaurants={(restaurants as Restaurant[]) ?? []}
-      campusId={campusId}
+      campuses={(campuses as Campus[]) ?? []}
     />
   );
 }

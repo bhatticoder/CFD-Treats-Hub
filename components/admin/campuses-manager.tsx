@@ -24,6 +24,8 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<Campus | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Per-campus preorder toggle state: { [campusId]: boolean }
   const [preorderLoading, setPreorderLoading] = useState<Record<string, boolean>>({});
@@ -70,14 +72,22 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
     router.refresh();
   }
 
-  async function del(campus: Campus) {
-    if (!confirm(`Delete "${campus.name}"? This cannot be undone.`)) return;
+  function confirmDelete(campus: Campus) {
     setDeleteError(null);
-    const { error } = await createClient().from("campuses").delete().eq("id", campus.id);
+    setDeleting(campus);
+  }
+
+  async function executeDelete() {
+    if (!deleting) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+    const { error } = await createClient().from("campuses").delete().eq("id", deleting.id);
+    setIsDeleting(false);
     if (error) {
-      setDeleteError(`Cannot delete "${campus.name}": ${error.message}`);
+      setDeleteError(`Cannot delete "${deleting.name}": ${error.message}`);
       return;
     }
+    setDeleting(null);
     router.refresh();
   }
 
@@ -184,11 +194,7 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
                 >
                   <Pencil className="h-5 w-5" />
                 </button>
-                <button
-                  onClick={() => del(c)}
-                  className="p-2 text-error hover:bg-error/10 rounded-lg"
-                  title="Delete campus"
-                >
+                <button onClick={() => confirmDelete(c)} className="p-2 text-error/70 hover:bg-error/10 hover:text-error rounded-xl transition-colors">
                   <Trash2 className="h-5 w-5" />
                 </button>
               </div>
@@ -256,8 +262,25 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
               <Input inputMode="numeric" value={codCap} onChange={(e) => setCodCap(e.target.value.replace(/\D/g, ""))} />
             </div>
           </div>
-          {error && <p className="text-sm text-error">{error}</p>}
+          {error && <p className="text-sm text-error mt-2">{error}</p>}
         </div>
+      </Modal>
+
+      <Modal
+        open={deleting !== null}
+        onClose={() => !isDeleting && setDeleting(null)}
+        title="Delete Campus"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setDeleting(null)} disabled={isDeleting}>Cancel</Button>
+            <Button variant="danger" loading={isDeleting} onClick={executeDelete}>Delete</Button>
+          </>
+        }
+      >
+        <p className="text-sm text-text-muted">
+          Are you sure you want to delete &quot;{deleting?.name}&quot;? This cannot be undone.
+        </p>
+        {deleteError && <p className="text-sm text-error mt-4">{deleteError}</p>}
       </Modal>
     </PageContainer>
   );

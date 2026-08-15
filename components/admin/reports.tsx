@@ -36,7 +36,10 @@ export function Reports({ campusId }: { campusId: string }) {
   }, [campusId, days]);
 
   useEffect(() => {
-    load();
+    const t = setTimeout(() => {
+      load();
+    }, 0);
+    return () => clearTimeout(t);
   }, [load]);
 
   const revenue = orders.reduce((s, o) => s + o.total, 0);

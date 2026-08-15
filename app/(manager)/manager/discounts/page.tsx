@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import { PageContainer } from "@/components/app-shell";
 import { ManagerDiscounts } from "@/components/manager-discounts";
 import type { Item, Profile } from "@/lib/types/models";
@@ -9,10 +10,12 @@ export default async function ManagerDiscountsPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  if (!user) redirect("/login");
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("campus_id, campuses(manager_discount_enabled)")
-    .eq("id", user!.id)
+    .eq("id", user.id)
     .maybeSingle();
   const p = profile as (Pick<Profile, "campus_id"> & {
     campuses?: { manager_discount_enabled: boolean };
