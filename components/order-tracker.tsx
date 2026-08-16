@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Package, ChefHat, Bike, PartyPopper } from "lucide-react";
+import { Check, Package, ChefHat, Bike, PartyPopper, Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { money, cn } from "@/lib/utils";
 import { PageContainer } from "@/components/app-shell";
 import { Card, CardBody } from "@/components/ui/card";
 import { Badge } from "@/components/ui/misc";
+import { Modal } from "@/components/ui/modal";
+import { Button } from "@/components/ui/button";
 import type { Order } from "@/lib/types/models";
 import type { OrderStatus } from "@/lib/domain/constants";
 
@@ -19,6 +21,36 @@ const STEPS: { key: OrderStatus; label: string; icon: React.ComponentType<{ clas
 
 export function OrderTracker({ initial }: { initial: Order }) {
   const [order, setOrder] = useState<Order>(initial);
+  const [rating, setRating] = useState(0);
+  const [feedback, setFeedback] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [showRating, setShowRating] = useState(false);
+  const [hasRated, setHasRated] = useState(false);
+
+  useEffect(() => {
+    if (order.order_status === "delivered" && !order.rating && !hasRated) {
+      setShowRating(true);
+    }
+  }, [order.order_status, order.rating, hasRated]);
+
+  async function submitRating() {
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/order/rate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: order.id, rating, feedback }),
+      });
+      if (res.ok) {
+        setHasRated(true);
+        setShowRating(false);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   useEffect(() => {
     const supabase = createClient();
@@ -51,6 +83,7 @@ export function OrderTracker({ initial }: { initial: Order }) {
   const activeIdx = STEPS.findIndex((s) => s.key === order.order_status);
 
   return (
+    <>
     <PageContainer max="max-w-2xl">
       <div className="mb-5 flex items-center justify-between">
         <h1 className="text-2xl font-extrabold text-text">{order.order_number}</h1>
@@ -112,5 +145,36 @@ export function OrderTracker({ initial }: { initial: Order }) {
         </CardBody>
       </Card>
     </PageContainer>
+      <Modal open={showRating} onClose={() => setShowRating(false)} title="Help us improve our service!">
+        <div className="flex flex-col items-center">
+          <div className="flex gap-2 mb-6">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button key={star} onClick={() => setRating(star)} className="focus:outline-none">
+                <Star
+                  className={cn(
+                    "h-10 w-10 transition-colors",
+                    rating >= star ? "fill-primary text-primary" : "text-border"
+                  )}
+                />
+              </button>
+            ))}
+          </div>
+          <textarea
+            className="w-full rounded-xl border border-border bg-surface p-3 text-sm text-text placeholder:text-text-faint focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary min-h-[100px]"
+            placeholder="Your satisfaction is our priority!"
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+          />
+          <Button
+            className="w-full mt-5"
+            disabled={rating === 0 || submitting}
+            loading={submitting}
+            onClick={submitRating}
+          >
+            Submit Feedback
+          </Button>
+        </div>
+      </Modal>
+    </>
   );
 }

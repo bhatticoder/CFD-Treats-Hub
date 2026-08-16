@@ -101,6 +101,7 @@ export interface Order {
   promo_code: string | null;
   rating: number | null;
   is_preorder: boolean;
+  feedback?: string | null;
   created_at: string;
   delivered_at: string | null;
   order_items?: OrderItem[];
