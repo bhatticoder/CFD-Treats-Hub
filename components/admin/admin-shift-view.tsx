@@ -13,6 +13,7 @@ export function AdminShiftView({ campuses: initialCampuses }: { campuses: Campus
   const router = useRouter();
   const [campuses, setCampuses] = useState(initialCampuses);
   const [busy, setBusy] = useState<Record<string, boolean>>({});
+  const [controlBusy, setControlBusy] = useState<Record<string, boolean>>({});
   const [globalBusy, setGlobalBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,6 +64,30 @@ export function AdminShiftView({ campuses: initialCampuses }: { campuses: Campus
     }
   }
 
+  async function updateManagerShiftControl(campusId: string, value: boolean) {
+    setError(null);
+    setControlBusy((prev) => ({ ...prev, [campusId]: true }));
+
+    try {
+      const res = await fetch("/api/shift-control", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campusId, enabled: value }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update permissions");
+
+      setCampuses((prev) =>
+        prev.map((c) => (c.id === campusId ? { ...c, manager_shift_control_enabled: value } : c)),
+      );
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setControlBusy((prev) => ({ ...prev, [campusId]: false }));
+    }
+  }
+
   const allOpen = campuses.every((c) => c.shift_active);
 
   return (
@@ -101,14 +126,28 @@ export function AdminShiftView({ campuses: initialCampuses }: { campuses: Campus
                   {c.domain_suffix} · {c.gender ?? "All genders"}
                 </p>
               </div>
-              <Badge tone={c.shift_active ? "success" : "warn"}>
-                {c.shift_active ? "SHIFT OPEN" : "ALL FINISHED"}
-              </Badge>
-              <Switch
-                checked={c.shift_active}
-                onChange={(v) => updateShift(c.id, v)}
-                disabled={busy[c.id]}
-              />
+              <div className="flex flex-col gap-2 items-end">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-text-muted">Live Status:</span>
+                  <Badge tone={c.shift_active ? "success" : "warn"}>
+                    {c.shift_active ? "SHIFT OPEN" : "ALL FINISHED"}
+                  </Badge>
+                  <Switch
+                    checked={c.shift_active}
+                    onChange={(v) => updateShift(c.id, v)}
+                    disabled={busy[c.id]}
+                  />
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-text-muted">Allow Managers to Toggle:</span>
+                  <Switch
+                    checked={c.manager_shift_control_enabled}
+                    onChange={(v) => updateManagerShiftControl(c.id, v)}
+                    disabled={controlBusy[c.id]}
+                  />
+                </div>
+              </div>
             </CardBody>
           </Card>
         ))}

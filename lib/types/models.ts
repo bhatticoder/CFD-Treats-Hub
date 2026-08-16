@@ -11,6 +11,7 @@ export interface Campus {
   payment_account_info: string | null;
   cod_cap_percent: number;
   manager_discount_enabled: boolean;
+  manager_shift_control_enabled: boolean;
   shift_active: boolean;
   is_active: boolean;
   preorder_open: boolean;

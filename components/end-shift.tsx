@@ -108,11 +108,16 @@ export function EndShift({
               <p className="text-xs text-text-muted">
                 {shiftActive ? "Customers can place orders." : "Ordering is paused."}
               </p>
+              {campus && !campus.manager_shift_control_enabled && (
+                <p className="mt-1 text-xs text-error font-medium">
+                  Controlled by Admin
+                </p>
+              )}
             </div>
             <Switch
               checked={shiftActive}
               onChange={toggleShift}
-              disabled={busy}
+              disabled={busy || !!(campus && !campus.manager_shift_control_enabled)}
             />
           </CardBody>
         </Card>
