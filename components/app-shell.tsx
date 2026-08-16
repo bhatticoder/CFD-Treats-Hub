@@ -72,7 +72,7 @@ export function AppShell({
   );
 
   const navLinks = (
-    <nav className="flex-1 space-y-1 px-3">
+    <nav className="flex-1 space-y-1 px-3 overflow-y-auto pb-4 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
       {items.map((it) => {
         const active = isActive(pathname, it);
         const Icon = it.icon;
