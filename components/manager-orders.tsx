@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Star } from "lucide-react";
 import { PageContainer } from "@/components/app-shell";
 import { Badge, EmptyState } from "@/components/ui/misc";
 import { cn } from "@/lib/utils";
@@ -93,6 +93,12 @@ export function ManagerOrders({
                     >
                       {o.order_status.replace(/_/g, " ")}
                     </Badge>
+                    {o.rating && (
+                      <div className="flex items-center ml-1">
+                        <Star className="h-4 w-4 fill-primary text-primary" />
+                        <span className="ml-1 text-sm font-bold text-text">{o.rating}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-text-faint" />

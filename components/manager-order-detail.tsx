@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2, Info } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Info, Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { money } from "@/lib/utils";
+import { money, cn } from "@/lib/utils";
 import { PageContainer } from "@/components/app-shell";
 import { Card, CardBody } from "@/components/ui/card";
 import { Badge } from "@/components/ui/misc";
@@ -116,8 +116,20 @@ export function ManagerOrderDetail({ order }: { order: Order }) {
           )}
         </div>
       ) : (
-        <div className="mt-6 flex items-center justify-center gap-2 rounded-2xl bg-success/10 p-4 font-bold text-success">
-          <CheckCircle2 className="h-5 w-5" /> Delivered
+        <div className="mt-6 flex flex-col items-center justify-center gap-2 rounded-2xl bg-success/10 p-4 font-bold text-success">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5" /> Delivered
+          </div>
+          {order.rating && (
+            <div className="mt-3 flex flex-col items-center gap-1 w-full border-t border-success/20 pt-3">
+              <div className="flex items-center gap-1 text-primary">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className={cn("h-4 w-4", i < order.rating! ? "fill-primary" : "text-success/30")} />
+                ))}
+              </div>
+              {order.feedback && <p className="text-center text-sm font-normal italic text-success/80">"{order.feedback}"</p>}
+            </div>
+          )}
         </div>
       )}
     </PageContainer>

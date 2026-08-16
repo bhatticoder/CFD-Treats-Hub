@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { money, cn } from "@/lib/utils";
 import { ORDER_STATUSES } from "@/lib/domain/constants";
@@ -76,6 +77,16 @@ export function AdminOrders({ orders }: { orders: Order[] }) {
                     Room {o.room_number}, {o.block} · {o.payment_method.toUpperCase()} ·{" "}
                     {new Date(o.created_at).toLocaleString()}
                   </p>
+                  {o.rating && (
+                    <div className="mt-2 rounded-lg bg-surface/50 border border-border p-2">
+                      <div className="flex items-center gap-1 text-primary">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className={cn("h-3 w-3", i < o.rating! ? "fill-primary" : "text-border")} />
+                        ))}
+                      </div>
+                      {o.feedback && <p className="mt-1 text-xs text-text-muted italic">"{o.feedback}"</p>}
+                    </div>
+                  )}
                   <div className="mt-2 flex items-center justify-between">
                     <span className="font-bold text-primary">{money(o.total)}</span>
                     {!done && (
