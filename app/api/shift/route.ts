@@ -30,13 +30,23 @@ export async function POST(req: Request) {
     const value = Boolean(shiftActive);
 
     if (campusId) {
-      const { error } = await supabase
-        .from("campuses")
-        .update({ shift_active: value })
-        .eq("id", campusId);
-      if (error) throw error;
+      // Use SECURITY DEFINER RPCs for managers to bypass RLS in case the 0005 migration isn't applied
+      if (profile.role === "manager" && profile.campus_id === campusId) {
+        const { error } = await supabase.rpc(value ? "start_shift" : "end_shift");
+        if (error) throw error;
+      } else {
+        const { error, data } = await supabase
+          .from("campuses")
+          .update({ shift_active: value })
+          .eq("id", campusId)
+          .select();
+        
+        if (error) throw error;
+        if (!data || data.length === 0) throw new Error("Not authorized to update this campus");
+      }
     } else {
-      // Update all campuses
+      // Update all campuses (Admin only)
+      if (profile.role !== "admin") throw new Error("Only admins can update all campuses");
       const { error } = await supabase
         .from("campuses")
         .update({ shift_active: value })
