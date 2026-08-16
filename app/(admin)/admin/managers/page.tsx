@@ -6,7 +6,7 @@ export default async function ManagersPage() {
   const supabase = await createClient();
   const { data: managers } = await supabase
     .from("profiles")
-    .select("*")
+    .select("*, campuses(name)")
     .eq("role", "manager")
     .order("full_name");
   const { data: campuses } = await supabase
@@ -15,7 +15,10 @@ export default async function ManagersPage() {
     .order("name");
   return (
     <ManagersManager
-      managers={(managers as Profile[]) ?? []}
+      managers={((managers as any[]) ?? []).map((m) => ({
+        ...m,
+        campus_name: m.campuses?.name,
+      })) as Profile[]}
       campuses={(campuses as Campus[]) ?? []}
     />
   );

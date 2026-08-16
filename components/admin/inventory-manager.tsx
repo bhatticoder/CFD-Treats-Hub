@@ -56,6 +56,7 @@ export function InventoryManager({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"all" | "menu" | "preorder">("all");
+  const [filterCampus, setFilterCampus] = useState<string>("all");
   const [editing, setEditing] = useState<Item | null>(null);
   const [draft, setDraft] = useState<Draft>(empty);
   const [file, setFile] = useState<File | null>(null);
@@ -173,25 +174,37 @@ export function InventoryManager({
         </Button>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        {([
-          ["all", "All"],
-          ["menu", "Menu items"],
-          ["preorder", "Pre-order items"],
-        ] as const).map(([v, label]) => (
-          <button
-            key={v}
-            onClick={() => setTab(v)}
-            className={
-              "rounded-full border px-4 py-1.5 text-sm " +
-              (tab === v
-                ? "border-primary bg-primary text-on-primary"
-                : "border-border bg-surface text-text-muted hover:bg-bg-muted")
-            }
+      <div className="mb-4 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+        <div className="flex flex-wrap gap-2">
+          {([
+            ["all", "All"],
+            ["menu", "Menu items"],
+            ["preorder", "Pre-order items"],
+          ] as const).map(([v, label]) => (
+            <button
+              key={v}
+              onClick={() => setTab(v)}
+              className={
+                "rounded-full border px-4 py-1.5 text-sm " +
+                (tab === v
+                  ? "border-primary bg-primary text-on-primary"
+                  : "border-border bg-surface text-text-muted hover:bg-bg-muted")
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="w-full sm:w-auto">
+          <Select 
+            value={filterCampus} 
+            onChange={(e) => setFilterCampus(e.target.value)}
+            className="w-full sm:w-48 bg-surface border-border text-sm"
           >
-            {label}
-          </button>
-        ))}
+            <option value="all">All Campuses</option>
+            {campuses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </Select>
+        </div>
       </div>
 
       {error && !open && (
@@ -199,9 +212,11 @@ export function InventoryManager({
       )}
 
       {(() => {
-        const shown = items.filter((i) =>
-          tab === "all" ? true : tab === "preorder" ? i.is_preorder : !i.is_preorder,
-        );
+        const shown = items.filter((i) => {
+          const tabMatch = tab === "all" ? true : tab === "preorder" ? i.is_preorder : !i.is_preorder;
+          const campusMatch = filterCampus === "all" ? true : i.campus_id === filterCampus;
+          return tabMatch && campusMatch;
+        });
         return shown.length === 0 ? (
           <p className="py-16 text-center text-text-faint">
             {tab === "preorder"

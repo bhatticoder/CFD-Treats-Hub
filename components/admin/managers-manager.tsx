@@ -95,6 +95,13 @@ export function ManagersManager({
                     {!m.is_active && <span className="ml-2 text-xs text-error">(inactive)</span>}
                   </p>
                   <p className="text-sm text-text-muted">{m.email}</p>
+                  {m.campus_name && (
+                    <div className="mt-1">
+                      <span className="inline-block px-2 py-0.5 rounded-md bg-primary/10 text-primary text-xs font-medium">
+                        {m.campus_name}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 {m.is_active && (
                   <button onClick={() => confirmDeactivate(m)} className="p-2 text-error/70 hover:bg-error/10 hover:text-error rounded-xl transition-colors" title="Remove">
