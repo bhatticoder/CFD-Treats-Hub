@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Power, Building2 } from "lucide-react";
 import { PageContainer } from "@/components/app-shell";
@@ -15,6 +15,19 @@ export function AdminShiftView({ campuses: initialCampuses }: { campuses: Campus
   const [busy, setBusy] = useState<Record<string, boolean>>({});
   const [globalBusy, setGlobalBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Auto-refresh to see live changes if a manager toggles their shift
+  useEffect(() => {
+    const timer = setInterval(() => {
+      router.refresh();
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [router]);
+  
+  // Sync state if it was refreshed from server
+  useEffect(() => {
+    setCampuses(initialCampuses);
+  }, [initialCampuses]);
 
   async function updateShift(campusId: string | null, value: boolean) {
     setError(null);

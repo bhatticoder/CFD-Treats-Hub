@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Banknote, CreditCard, Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -22,6 +22,17 @@ export function EndShift({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shiftActive, setShiftActive] = useState(campus?.shift_active ?? true);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      router.refresh();
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [router]);
+
+  useEffect(() => {
+    if (campus) setShiftActive(campus.shift_active);
+  }, [campus]);
 
   async function toggleShift(value: boolean) {
     setBusy(true);

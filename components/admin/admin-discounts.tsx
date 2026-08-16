@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Megaphone } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -8,33 +8,43 @@ import { money } from "@/lib/utils";
 import { PageContainer } from "@/components/app-shell";
 import { Card, CardBody } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input, Label, Textarea } from "@/components/ui/input";
+import { Input, Label, Textarea, Select } from "@/components/ui/input";
 import { Switch } from "@/components/ui/misc";
 import { Modal } from "@/components/ui/modal";
 import type { Campus, Item } from "@/lib/types/models";
 
-export function AdminDiscounts({ campus, items }: { campus: Campus; items: Item[] }) {
+export function AdminDiscounts({ campuses, items }: { campuses: Campus[]; items: Item[] }) {
   const router = useRouter();
+  const [selectedCampusId, setSelectedCampusId] = useState<string>(campuses[0]?.id ?? "");
+  const activeCampus = campuses.find((c) => c.id === selectedCampusId);
+  const activeItems = items.filter((item) => item.campus_id === selectedCampusId);
+
   const [notifyOpen, setNotifyOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
-  // Optimistic local state so the switch flips instantly (the DB write +
-  // server refresh round-trips to Tokyo and would otherwise feel frozen).
+
+  // Optimistic local state so the switch flips instantly
   const [managerDiscount, setManagerDiscount] = useState(
-    campus?.manager_discount_enabled ?? false,
+    activeCampus?.manager_discount_enabled ?? false,
   );
+  
+  useEffect(() => {
+    if (activeCampus) {
+      setManagerDiscount(activeCampus.manager_discount_enabled);
+    }
+  }, [activeCampus]);
   const [toggleErr, setToggleErr] = useState<string | null>(null);
 
   async function toggleManagerDiscount(v: boolean) {
-    if (!campus?.id) return setToggleErr("No campus assigned to this admin");
+    if (!activeCampus?.id) return setToggleErr("No campus selected");
     setManagerDiscount(v); // optimistic
     setToggleErr(null);
     const { error } = await createClient()
       .from("campuses")
       .update({ manager_discount_enabled: v })
-      .eq("id", campus.id);
+      .eq("id", activeCampus.id);
     if (error) {
       setManagerDiscount(!v); // revert
       setToggleErr(error.message);
@@ -49,9 +59,9 @@ export function AdminDiscounts({ campus, items }: { campus: Campus; items: Item[
   }
 
   async function sendNotification() {
-    if (!title.trim() || !message.trim()) return;
+    if (!title.trim() || !message.trim() || !activeCampus) return;
     await createClient().from("notifications").insert({
-      campus_id: campus.id,
+      campus_id: activeCampus.id,
       title: title.trim(),
       message: message.trim(),
     });
@@ -61,7 +71,23 @@ export function AdminDiscounts({ campus, items }: { campus: Campus; items: Item[
 
   return (
     <PageContainer max="max-w-3xl">
-      <h1 className="mb-4 text-2xl font-extrabold text-text">Discounts</h1>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-2xl font-extrabold text-text">Discounts</h1>
+        <div className="flex items-center gap-3">
+          <Label className="whitespace-nowrap">Campus:</Label>
+          <Select
+            value={selectedCampusId}
+            onChange={(e) => setSelectedCampusId(e.target.value)}
+            className="w-48"
+          >
+            {campuses.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+      </div>
 
       <Card className="mb-4">
         <CardBody className="flex items-center justify-between">
@@ -79,7 +105,7 @@ export function AdminDiscounts({ campus, items }: { campus: Campus; items: Item[
       </Button>
 
       <div className="space-y-3">
-        {items.map((item) => (
+        {activeItems.map((item) => (
           <Card key={item.id}>
             <CardBody className="flex flex-wrap items-center gap-3">
               <div className="min-w-0 flex-1">
