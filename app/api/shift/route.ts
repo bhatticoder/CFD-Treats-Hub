@@ -55,8 +55,8 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ success: true, shift_active: value });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
+  } catch (e: any) {
+    const msg = e?.message || (typeof e === 'object' ? JSON.stringify(e) : String(e));
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
