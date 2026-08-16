@@ -73,6 +73,9 @@ export default function RegisterPage() {
       );
       if (validMatch) effectiveCampusId = validMatch.id;
     }
+    
+    const isGirlsCampus = selectedCampus?.gender === "Female";
+    const finalBlock = isGirlsCampus ? "Main" : block;
 
     const { error } = await supabase.from("profiles").insert({
       id: uid,
@@ -81,7 +84,7 @@ export default function RegisterPage() {
       phone: phone.trim(),
       gender,
       campus_id: effectiveCampusId,
-      block,
+      block: finalBlock,
       room_number: room.trim(),
       role: "customer",
       is_active: true,
@@ -145,17 +148,19 @@ export default function RegisterPage() {
               ))}
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Block</Label>
-              <Select value={block} onChange={(e) => setBlock(e.target.value)}>
-                {HOSTEL_BLOCKS.map((b) => (
-                  <option key={b} value={b}>
-                    {b}
-                  </option>
-                ))}
-              </Select>
-            </div>
+          <div className={`grid ${campuses.find((c) => c.id === campusId)?.gender === "Female" ? "grid-cols-1" : "grid-cols-2"} gap-3`}>
+            {campuses.find((c) => c.id === campusId)?.gender !== "Female" && (
+              <div>
+                <Label>Block</Label>
+                <Select value={block} onChange={(e) => setBlock(e.target.value)}>
+                  {HOSTEL_BLOCKS.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            )}
             <div>
               <Label>Room no.</Label>
               <Input

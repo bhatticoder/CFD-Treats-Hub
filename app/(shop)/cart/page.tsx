@@ -31,6 +31,7 @@ export default function CartPage() {
 
   const [campusClosed, setCampusClosed] = useState(false);
   const [campusName, setCampusName] = useState<string | null>(null);
+  const [isGirlsCampus, setIsGirlsCampus] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -48,7 +49,7 @@ export default function CartPage() {
       if (prof?.block) setBlock(prof.block);
 
       let rawCampus = prof?.campuses;
-      let campus = (Array.isArray(rawCampus) ? rawCampus[0] : rawCampus) as { id?: string; name?: string; payment_account_info?: string; shift_active?: boolean } | null;
+      let campus = (Array.isArray(rawCampus) ? rawCampus[0] : rawCampus) as { id?: string; name?: string; payment_account_info?: string; shift_active?: boolean; gender?: string } | null;
 
       // Auto-heal missing profile campus_id if user doesn't have one set yet
       if (!prof?.campus_id) {
@@ -71,6 +72,9 @@ export default function CartPage() {
       if (campus?.payment_account_info) setAccount(campus.payment_account_info);
       if (campus && campus.shift_active === false) {
         setCampusClosed(true);
+      }
+      if (campus?.gender === "Female") {
+        setIsGirlsCampus(true);
       }
 
       // Bug #12 fix: refresh cart items against the DB if stale
@@ -119,7 +123,7 @@ export default function CartPage() {
       // Server prices the order from item_id + quantity only.
       const { data, error } = await supabase.rpc("place_order", {
         p_room_number: room.trim(),
-        p_block: block,
+        p_block: isGirlsCampus ? "Main" : block,
         p_payment_method: method,
         p_payment_screenshot_url: screenshotUrl,
         p_items: lines.map((l) => ({
@@ -210,8 +214,8 @@ export default function CartPage() {
       {/* Delivery */}
       <Card className="mt-5">
         <CardBody className="space-y-3">
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-2">
+          <div className={`grid ${isGirlsCampus ? "grid-cols-1" : "grid-cols-3"} gap-3`}>
+            <div className={isGirlsCampus ? "" : "col-span-2"}>
               <Label>Room number</Label>
               <Input
                 inputMode="numeric"
@@ -220,16 +224,18 @@ export default function CartPage() {
                 placeholder="Digits only"
               />
             </div>
-            <div>
-              <Label>Block</Label>
-              <Select value={block} onChange={(e) => setBlock(e.target.value)}>
-                {HOSTEL_BLOCKS.map((b) => (
-                  <option key={b} value={b}>
-                    {b}
-                  </option>
-                ))}
-              </Select>
-            </div>
+            {!isGirlsCampus && (
+              <div>
+                <Label>Block</Label>
+                <Select value={block} onChange={(e) => setBlock(e.target.value)}>
+                  {HOSTEL_BLOCKS.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            )}
           </div>
 
           <div>

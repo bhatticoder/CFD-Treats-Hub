@@ -20,11 +20,13 @@ export function PreorderBrowser({
   defaultRoom,
   defaultBlock,
   account,
+  isGirlsCampus,
 }: {
   items: Item[];
   defaultRoom: string;
   defaultBlock: string;
   account: string | null;
+  isGirlsCampus: boolean;
 }) {
   const router = useRouter();
   const [qty, setQty] = useState<Record<string, number>>({});
@@ -80,7 +82,7 @@ export function PreorderBrowser({
       }
       const { data, error } = await supabase.rpc("place_preorder", {
         p_room_number: room.trim(),
-        p_block: block,
+        p_block: isGirlsCampus ? "Main" : block,
         p_payment_method: method,
         p_payment_screenshot_url: screenshotUrl,
         p_items: lines.map((l) => ({ item_id: l.item.id, quantity: l.quantity })),
@@ -155,17 +157,19 @@ export function PreorderBrowser({
 
       <Card className="mb-4">
         <CardBody className="space-y-3">
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-2">
+          <div className={`grid ${isGirlsCampus ? "grid-cols-1" : "grid-cols-3"} gap-3`}>
+            <div className={isGirlsCampus ? "" : "col-span-2"}>
               <Label>Room number</Label>
               <Input inputMode="numeric" value={room} onChange={(e) => setRoom(e.target.value.replace(/\D/g, ""))} />
             </div>
-            <div>
-              <Label>Block</Label>
-              <Select value={block} onChange={(e) => setBlock(e.target.value)}>
-                {HOSTEL_BLOCKS.map((b) => <option key={b} value={b}>{b}</option>)}
-              </Select>
-            </div>
+            {!isGirlsCampus && (
+              <div>
+                <Label>Block</Label>
+                <Select value={block} onChange={(e) => setBlock(e.target.value)}>
+                  {HOSTEL_BLOCKS.map((b) => <option key={b} value={b}>{b}</option>)}
+                </Select>
+              </div>
+            )}
           </div>
           <div>
             <Label>Payment</Label>
