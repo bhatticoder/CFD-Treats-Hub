@@ -17,12 +17,16 @@ export function MenuBrowser({
   preordersOpen,
   firstName,
   campusName,
+  deliveryActive = true,
+  collectionRoom = null,
 }: {
   items: Item[];
   shiftActive: boolean;
   preordersOpen: boolean;
   firstName: string;
   campusName: string;
+  deliveryActive?: boolean;
+  collectionRoom?: string | null;
 }) {
   const [category, setCategory] = useState<string>("All");
   const [restaurant, setRestaurant] = useState<string>("All");
@@ -58,6 +62,24 @@ export function MenuBrowser({
           <p className="text-sm text-text-muted">{campusName}</p>
         </div>
       </div>
+
+      {!deliveryActive && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-5 flex flex-col sm:flex-row items-start sm:items-center gap-3 rounded-2xl border-2 border-accent-warm/40 bg-accent-warm/10 p-4 shadow-sm"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-warm text-white">
+            <Store className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="font-extrabold text-accent-warm">Self-Pickup Only Today</h3>
+            <p className="text-sm font-medium text-text mt-0.5">
+              Room delivery is currently off. You'll need to walk a bit and collect your order from <span className="font-black text-primary px-1 bg-primary/10 rounded">{collectionRoom || "the kitchen"}</span>.
+            </p>
+          </div>
+        </motion.div>
+      )}
 
       {preordersOpen && (
         <motion.div

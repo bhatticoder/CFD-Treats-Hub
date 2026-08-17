@@ -33,8 +33,28 @@ export function AdminOrders({ orders }: { orders: Order[] }) {
     const supabase = createClient();
     if (action === "deliver") {
       await supabase.rpc("mark_delivered", { p_order_id: order.id });
+      fetch("/api/push/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userIds: [order.customer_id],
+          title: "Order Delivered 🎉",
+          message: `Your order #${order.order_number} has been delivered!`,
+          url: `/track/${order.id}`
+        })
+      }).catch(() => {});
     } else {
       await supabase.from("orders").update({ order_status: "cancelled" }).eq("id", order.id);
+      fetch("/api/push/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userIds: [order.customer_id],
+          title: "Order Cancelled ❌",
+          message: `Your order #${order.order_number} was cancelled.`,
+          url: `/track/${order.id}`
+        })
+      }).catch(() => {});
     }
     setBusy(null);
     router.refresh();

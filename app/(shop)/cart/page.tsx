@@ -39,6 +39,8 @@ export default function CartPage() {
   const [campusClosed, setCampusClosed] = useState(false);
   const [campusName, setCampusName] = useState<string | null>(null);
   const [isGirlsCampus, setIsGirlsCampus] = useState(false);
+  const [deliveryActive, setDeliveryActive] = useState(true);
+  const [collectionRoom, setCollectionRoom] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -56,7 +58,7 @@ export default function CartPage() {
       if (prof?.block) setBlock(prof.block);
 
       let rawCampus = prof?.campuses;
-      let campus = (Array.isArray(rawCampus) ? rawCampus[0] : rawCampus) as { id?: string; name?: string; payment_account_info?: string; shift_active?: boolean; gender?: string } | null;
+      let campus = (Array.isArray(rawCampus) ? rawCampus[0] : rawCampus) as { id?: string; name?: string; payment_account_info?: string; shift_active?: boolean; gender?: string; delivery_active?: boolean; collection_room?: string | null } | null;
 
       // Auto-heal missing profile campus_id if user doesn't have one set yet
       if (!prof?.campus_id) {
@@ -82,6 +84,12 @@ export default function CartPage() {
       }
       if (campus?.gender === "Female") {
         setIsGirlsCampus(true);
+      }
+      if (campus?.delivery_active !== undefined) {
+        setDeliveryActive(campus.delivery_active);
+      }
+      if (campus?.collection_room !== undefined) {
+        setCollectionRoom(campus.collection_room);
       }
       if (campus?.id) {
         const { data: vData } = await supabase.from("vouchers").select("*").eq("campus_id", campus.id).eq("is_active", true);
@@ -144,8 +152,10 @@ export default function CartPage() {
 
   async function placeOrder() {
     setError(null);
-    const rErr = validateRoom(room);
-    if (rErr) return setError(rErr);
+    if (deliveryActive) {
+      const rErr = validateRoom(room);
+      if (rErr) return setError(rErr);
+    }
     if (method === "online" && !file) {
       return setError("Please upload your payment screenshot");
     }
@@ -169,7 +179,7 @@ export default function CartPage() {
 
       // Server prices the order from item_id + quantity only.
       const { data, error } = await supabase.rpc("place_order", {
-        p_room_number: room.trim(),
+        p_room_number: deliveryActive ? room.trim() : `Pickup: ${collectionRoom || "Counter"}`,
         p_block: isGirlsCampus ? "Main" : block,
         p_payment_method: method,
         p_payment_screenshot_url: screenshotUrl,
@@ -182,6 +192,21 @@ export default function CartPage() {
       });
       if (error) throw new Error(error.message ?? String(error));
       const order = Array.isArray(data) ? data[0] : data;
+      
+      try {
+        fetch("/api/push/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            campusId: lines[0]?.item.campus_id,
+            role: "manager",
+            title: "New Order Placed 🚀",
+            message: `Order #${order.order_number} has been placed.`,
+            url: "/admin/orders"
+          })
+        }).catch(() => {});
+      } catch (e) {}
+
       clear();
       router.push(`/track/${order.id}`);
     } catch (e) {
@@ -263,26 +288,35 @@ export default function CartPage() {
       {/* Delivery */}
       <Card className="mt-5">
         <CardBody className="space-y-3">
-          <div className={`grid ${isGirlsCampus ? "grid-cols-1" : "grid-cols-3"} gap-3`}>
-            <div className={isGirlsCampus ? "" : "col-span-2"}>
-              <Label>Room number</Label>
-              <Input
-                inputMode="numeric"
-                value={room}
-                onChange={(e) => setRoom(e.target.value.replace(/\D/g, ""))}
-                placeholder="Digits only"
-              />
-            </div>
-            {!isGirlsCampus && (
-              <div>
-                <Label>Block</Label>
-                <Select value={block} onChange={(e) => setBlock(e.target.value)}>
-                  {HOSTEL_BLOCKS.map((b) => (
-                    <option key={b} value={b}>
-                      {b}
-                    </option>
-                  ))}
-                </Select>
+          <div className={`grid ${isGirlsCampus || !deliveryActive ? "grid-cols-1" : "grid-cols-3"} gap-3`}>
+            {deliveryActive ? (
+              <>
+                <div className={isGirlsCampus ? "" : "col-span-2"}>
+                  <Label>Room number</Label>
+                  <Input
+                    inputMode="numeric"
+                    value={room}
+                    onChange={(e) => setRoom(e.target.value.replace(/\D/g, ""))}
+                    placeholder="Digits only"
+                  />
+                </div>
+                {!isGirlsCampus && (
+                  <div>
+                    <Label>Block</Label>
+                    <Select value={block} onChange={(e) => setBlock(e.target.value)}>
+                      {HOSTEL_BLOCKS.map((b) => (
+                        <option key={b} value={b}>
+                          {b}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="rounded-xl border border-accent-warm/30 bg-accent-warm/10 p-4 text-center">
+                <p className="font-extrabold text-accent-warm text-lg">Self-Pickup Only</p>
+                <p className="text-sm mt-1 text-text">Please collect your order from <span className="font-black px-1.5 py-0.5 bg-accent-warm/20 text-accent-warm rounded-md">{collectionRoom || "the kitchen"}</span></p>
               </div>
             )}
           </div>

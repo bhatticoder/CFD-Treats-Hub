@@ -140,7 +140,11 @@ export function OrderTracker({ initial }: { initial: Order }) {
             <span className="text-success">{money(order.total)}</span>
           </div>
           <p className="mt-2 text-sm text-text-muted">
-            Deliver to Room {order.room_number}, {order.block} Block
+            {order.room_number.startsWith("Pickup:") ? (
+              <span className="font-bold text-accent-warm">{order.room_number}</span>
+            ) : (
+              `Deliver to Room ${order.room_number}, ${order.block} Block`
+            )}
           </p>
         </CardBody>
       </Card>

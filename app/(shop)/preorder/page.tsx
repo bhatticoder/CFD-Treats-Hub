@@ -75,6 +75,8 @@ export default async function PreorderPage() {
       defaultBlock={p?.block ?? "Iqbal"}
       account={campus?.payment_account_info ?? null}
       isGirlsCampus={campus?.gender === "Female"}
+      deliveryActive={campus?.delivery_active ?? true}
+      collectionRoom={campus?.collection_room ?? null}
     />
   );
 }

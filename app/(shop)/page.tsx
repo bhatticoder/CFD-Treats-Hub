@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { PageContainer } from "@/components/app-shell";
 import { MenuBrowser } from "@/components/menu-browser";
+import { PushPrompt } from "@/components/push-prompt";
 import { isPreorderOpen } from "@/lib/domain/preorder";
 import type { Campus, Item, Profile } from "@/lib/types/models";
 
@@ -54,12 +56,17 @@ export default async function MenuPage() {
   const firstName = p?.full_name?.split(" ")[0] ?? "there";
 
   return (
-    <MenuBrowser
-      items={items}
-      shiftActive={shiftActive}
-      preordersOpen={preordersOpen}
-      firstName={firstName}
-      campusName={campus?.name ?? "CFD Campus"}
-    />
+    <PageContainer>
+      <PushPrompt />
+      <MenuBrowser
+        items={items}
+        shiftActive={shiftActive}
+        preordersOpen={preordersOpen}
+        firstName={firstName}
+        campusName={campus?.name ?? "CFD Campus"}
+        deliveryActive={campus?.delivery_active ?? true}
+        collectionRoom={campus?.collection_room ?? null}
+      />
+    </PageContainer>
   );
 }

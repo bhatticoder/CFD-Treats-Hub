@@ -21,12 +21,16 @@ export function PreorderBrowser({
   defaultBlock,
   account,
   isGirlsCampus,
+  deliveryActive,
+  collectionRoom,
 }: {
   items: Item[];
   defaultRoom: string;
   defaultBlock: string;
   account: string | null;
   isGirlsCampus: boolean;
+  deliveryActive: boolean;
+  collectionRoom: string | null;
 }) {
   const router = useRouter();
   const [qty, setQty] = useState<Record<string, number>>({});
@@ -138,7 +142,7 @@ export function PreorderBrowser({
         screenshotUrl = supabase.storage.from("payment-screenshots").getPublicUrl(path).data.publicUrl;
       }
       const { data, error } = await supabase.rpc("place_preorder", {
-        p_room_number: room.trim(),
+        p_room_number: deliveryActive ? room.trim() : `Pickup: ${collectionRoom || "Counter"}`,
         p_block: isGirlsCampus ? "Main" : block,
         p_payment_method: method,
         p_payment_screenshot_url: screenshotUrl,
@@ -148,6 +152,21 @@ export function PreorderBrowser({
       });
       if (error) throw error;
       const order = Array.isArray(data) ? data[0] : data;
+      
+      try {
+        fetch("/api/push/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            campusId: items[0]?.campus_id,
+            role: "manager",
+            title: "New Pre-order Placed 🕒",
+            message: `Pre-order #${order.order_number} has been placed.`,
+            url: "/admin/preorders"
+          })
+        }).catch(() => {});
+      } catch (e) {}
+
       router.push(`/track/${order.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -216,17 +235,34 @@ export function PreorderBrowser({
 
       <Card className="mb-4">
         <CardBody className="space-y-3">
-          <div className={`grid ${isGirlsCampus ? "grid-cols-1" : "grid-cols-3"} gap-3`}>
-            <div className={isGirlsCampus ? "" : "col-span-2"}>
-              <Label>Room number</Label>
-              <Input inputMode="numeric" value={room} onChange={(e) => setRoom(e.target.value.replace(/\D/g, ""))} />
-            </div>
-            {!isGirlsCampus && (
-              <div>
-                <Label>Block</Label>
-                <Select value={block} onChange={(e) => setBlock(e.target.value)}>
-                  {HOSTEL_BLOCKS.map((b) => <option key={b} value={b}>{b}</option>)}
-                </Select>
+          <div className={`grid ${isGirlsCampus || !deliveryActive ? "grid-cols-1" : "grid-cols-2"} gap-3`}>
+            {deliveryActive ? (
+              <>
+                <div>
+                  <Label>Room number</Label>
+                  <Input
+                    inputMode="numeric"
+                    value={room}
+                    onChange={(e) => setRoom(e.target.value.replace(/\D/g, ""))}
+                  />
+                </div>
+                {!isGirlsCampus && (
+                  <div>
+                    <Label>Block</Label>
+                    <Select value={block} onChange={(e) => setBlock(e.target.value)}>
+                      {HOSTEL_BLOCKS.map((b) => (
+                        <option key={b} value={b}>
+                          {b}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="rounded-xl border border-accent-warm/30 bg-accent-warm/10 p-4 text-center mt-2">
+                <p className="font-extrabold text-accent-warm text-lg">Self-Pickup Only</p>
+                <p className="text-sm mt-1 text-text">Please collect your order from <span className="font-black px-1.5 py-0.5 bg-accent-warm/20 text-accent-warm rounded-md">{collectionRoom || "the kitchen"}</span></p>
               </div>
             )}
           </div>

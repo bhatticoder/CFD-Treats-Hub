@@ -4,6 +4,7 @@ import { myCampus } from "@/lib/db/server-helpers";
 import { PageContainer } from "@/components/app-shell";
 import { Card, CardBody } from "@/components/ui/card";
 import { PreorderControl } from "@/components/admin/preorder-control";
+import { PushPrompt } from "@/components/push-prompt";
 import { money } from "@/lib/utils";
 import { ShoppingBag, Wallet, Banknote, AlertTriangle } from "lucide-react";
 import type { Campus } from "@/lib/types/models";
@@ -48,6 +49,7 @@ export default async function AdminDashboard() {
 
   return (
     <PageContainer>
+      <PushPrompt />
       <h1 className="mb-1 text-2xl font-extrabold text-text">Dashboard</h1>
       <p className="mb-6 text-sm text-text-muted">Today at a glance</p>
       <div className="mb-5 space-y-4">

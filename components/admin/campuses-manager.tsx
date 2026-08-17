@@ -21,6 +21,8 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
   const [domain, setDomain] = useState(DEFAULT_DOMAIN_SUFFIX);
   const [gender, setGender] = useState<string>("Male");
   const [codCap, setCodCap] = useState("100");
+  const [deliveryActive, setDeliveryActive] = useState(true);
+  const [collectionRoom, setCollectionRoom] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -36,6 +38,8 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
     setDomain(DEFAULT_DOMAIN_SUFFIX);
     setGender("Male");
     setCodCap("100");
+    setDeliveryActive(true);
+    setCollectionRoom("");
     setError(null);
     setOpen(true);
   }
@@ -46,6 +50,8 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
     setDomain(c.domain_suffix || DEFAULT_DOMAIN_SUFFIX);
     setGender(c.gender || "Male");
     setCodCap(String(c.cod_cap_percent ?? 100));
+    setDeliveryActive(c.delivery_active ?? true);
+    setCollectionRoom(c.collection_room || "");
     setError(null);
     setOpen(true);
   }
@@ -60,6 +66,8 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
       domain_suffix: domain.trim().toLowerCase(),
       gender: gender as "Male" | "Female",
       cod_cap_percent: Number(codCap) || 100,
+      delivery_active: deliveryActive,
+      collection_room: !deliveryActive ? collectionRoom.trim() : null,
     };
 
     const { error: err } = editing
@@ -181,7 +189,7 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-text">{c.name}</p>
                   <p className="text-sm text-text-muted">
-                    {c.domain_suffix} · {c.gender} · COD cap {c.cod_cap_percent}%
+                    {c.domain_suffix} · {c.gender} · COD cap {c.cod_cap_percent}% · Delivery {c.delivery_active ? "ON" : "OFF"}
                   </p>
                 </div>
                 <Badge tone={c.shift_active ? "success" : "warn"}>
@@ -262,6 +270,23 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
               <Input inputMode="numeric" value={codCap} onChange={(e) => setCodCap(e.target.value.replace(/\D/g, ""))} />
             </div>
           </div>
+          <div className="flex items-center justify-between rounded-xl border border-border bg-bg-muted p-3">
+            <div>
+              <Label className="mb-0">Delivery Active</Label>
+              <p className="text-xs text-text-muted">Turn off to enable self-pickup</p>
+            </div>
+            <Switch checked={deliveryActive} onChange={setDeliveryActive} disabled={false} />
+          </div>
+          {!deliveryActive && (
+            <div>
+              <Label>Collection Room</Label>
+              <Input
+                value={collectionRoom}
+                onChange={(e) => setCollectionRoom(e.target.value)}
+                placeholder="e.g. Room 102"
+              />
+            </div>
+          )}
           {error && <p className="text-sm text-error mt-2">{error}</p>}
         </div>
       </Modal>
