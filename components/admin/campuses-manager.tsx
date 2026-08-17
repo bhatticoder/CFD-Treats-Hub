@@ -42,10 +42,16 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
     if (!campusDelivTarget) return;
     setCampusDelivBusy(true);
     const supabase = createClient();
-    await supabase.from("campuses").update({ 
+    const { error } = await supabase.from("campuses").update({ 
       delivery_active: campusDelivActive, 
-      collection_room: campusDelivActive ? null : campusDelivRoom 
+      collection_room: campusDelivActive ? null : campusDelivRoom.trim() 
     }).eq("id", campusDelivTarget.id);
+    
+    if (error) {
+      setCampusDelivBusy(false);
+      alert("Failed to update delivery settings: " + error.message);
+      return;
+    }
     
     setCampusDelivBusy(false);
     setCampusDelivOpen(false);
