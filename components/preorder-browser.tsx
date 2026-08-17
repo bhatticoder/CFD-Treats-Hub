@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Minus, Plus, Upload, Store, CalendarClock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { computeTotals } from "@/lib/domain/pricing";
-import { HOSTEL_BLOCKS, COD_EXTRA_CHARGE } from "@/lib/domain/constants";
+import { computeTotals, effectivePrice } from "@/lib/domain/pricing";
+import { HOSTEL_BLOCKS, COD_EXTRA_CHARGE, PLATFORM_FEE } from "@/lib/domain/constants";
 import { validateRoom } from "@/lib/domain/validators";
 import { money, cn } from "@/lib/utils";
 import { PageContainer } from "@/components/app-shell";
@@ -13,7 +13,7 @@ import { Card, CardBody } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/misc";
-import type { CartLine, Item } from "@/lib/types/models";
+import type { CartLine, Item, Voucher } from "@/lib/types/models";
 
 export function PreorderBrowser({
   items,
@@ -38,6 +38,26 @@ export function PreorderBrowser({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [promoCode, setPromoCode] = useState("");
+  const [additionalNote, setAdditionalNote] = useState("");
+  const [activeVouchers, setActiveVouchers] = useState<Voucher[]>([]);
+  const [appliedVoucher, setAppliedVoucher] = useState<Voucher | null>(null);
+  const [voucherError, setVoucherError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const campusId = items[0]?.campus_id;
+    if (campusId) {
+      createClient()
+        .from("vouchers")
+        .select("*")
+        .eq("campus_id", campusId)
+        .eq("is_active", true)
+        .then(({ data }) => {
+          if (data) setActiveVouchers(data as Voucher[]);
+        });
+    }
+  }, [items]);
+
   const groups = useMemo(() => {
     const map = new Map<string, Item[]>();
     for (const it of items) {
@@ -51,7 +71,44 @@ export function PreorderBrowser({
   const lines: CartLine[] = items
     .filter((i) => (qty[i.id] ?? 0) > 0)
     .map((i) => ({ item: i, quantity: qty[i.id] }));
-  const totals = computeTotals(lines, { isCod: method === "cod" });
+    
+  let discountAmount = 0;
+  if (appliedVoucher) {
+    const sub = lines.reduce((sum, l) => sum + effectivePrice(l) * l.quantity, 0) + 
+                lines.reduce((sum, l) => sum + l.item.delivery_fee * l.quantity, 0) + 
+                PLATFORM_FEE + (method === "cod" ? COD_EXTRA_CHARGE : 0);
+    if (sub >= appliedVoucher.min_order_value) {
+      discountAmount = appliedVoucher.discount_type === "percentage" 
+        ? sub * (appliedVoucher.discount_value / 100)
+        : appliedVoucher.discount_value;
+      if (discountAmount > sub) discountAmount = sub;
+    }
+  }
+
+  const totals = computeTotals(lines, { isCod: method === "cod", discountAmount });
+
+  function applyPromo() {
+    setVoucherError(null);
+    if (!promoCode.trim()) {
+      setAppliedVoucher(null);
+      return;
+    }
+    const v = activeVouchers.find(v => v.code.toUpperCase() === promoCode.trim().toUpperCase());
+    if (!v) {
+      setVoucherError("Invalid or expired promo code");
+      setAppliedVoucher(null);
+      return;
+    }
+    const sub = lines.reduce((sum, l) => sum + effectivePrice(l) * l.quantity, 0) + 
+                lines.reduce((sum, l) => sum + l.item.delivery_fee * l.quantity, 0) + 
+                PLATFORM_FEE + (method === "cod" ? COD_EXTRA_CHARGE : 0);
+    if (sub < v.min_order_value) {
+      setVoucherError(`Minimum order value for this code is ${money(v.min_order_value)}`);
+      setAppliedVoucher(null);
+      return;
+    }
+    setAppliedVoucher(v);
+  }
 
   function bump(id: string, delta: number) {
     setQty((q) => {
@@ -86,6 +143,8 @@ export function PreorderBrowser({
         p_payment_method: method,
         p_payment_screenshot_url: screenshotUrl,
         p_items: lines.map((l) => ({ item_id: l.item.id, quantity: l.quantity })),
+        p_promo_code: appliedVoucher ? appliedVoucher.code : null,
+        p_additional_note: additionalNote.trim() ? additionalNote.trim() : null,
       });
       if (error) throw error;
       const order = Array.isArray(data) ? data[0] : data;
@@ -214,12 +273,52 @@ export function PreorderBrowser({
         </CardBody>
       </Card>
 
+      <div className="mb-4 space-y-4">
+        <Card>
+          <CardBody>
+            <Label>Additional Note (Optional)</Label>
+            <Input
+              value={additionalNote}
+              onChange={(e) => setAdditionalNote(e.target.value)}
+              placeholder="How can we please you more?"
+            />
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardBody>
+            <Label>Promo Code</Label>
+            <div className="flex gap-2">
+              <Input
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                placeholder="Enter discount code"
+                className="uppercase"
+              />
+              <Button onClick={applyPromo} variant="outline">Apply</Button>
+            </div>
+            {voucherError && <p className="mt-1 text-xs text-error">{voucherError}</p>}
+            {appliedVoucher && (
+              <p className="mt-1 text-xs text-success">
+                Promo code applied! You get {appliedVoucher.discount_type === "percentage" ? `${appliedVoucher.discount_value}% OFF` : `${money(appliedVoucher.discount_value)} OFF`}.
+              </p>
+            )}
+          </CardBody>
+        </Card>
+      </div>
+
       <Card className="mb-4">
         <CardBody className="space-y-1 text-sm">
           <Row label="Items" value={money(totals.itemTotal)} />
           <Row label="Delivery" value={money(totals.deliveryFee)} />
           <Row label="Platform fee" value={money(totals.platformFee)} />
           {method === "cod" && <Row label="COD" value={money(totals.codCharge)} />}
+          {totals.discountAmount > 0 && (
+            <div className="flex justify-between text-success">
+              <span>Discount</span>
+              <span>-{money(totals.discountAmount)}</span>
+            </div>
+          )}
           <Row label="GST (5%)" value={money(totals.gst)} />
           <div className="my-1 border-t border-border" />
           <div className="flex justify-between text-base font-extrabold">

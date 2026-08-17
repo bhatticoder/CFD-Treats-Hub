@@ -7,9 +7,10 @@ import { Minus, Plus, Trash2, Upload, PartyPopper } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useCart, CART_TTL } from "@/lib/store/cart";
 import { computeTotals, effectivePrice } from "@/lib/domain/pricing";
-import { HOSTEL_BLOCKS, COD_EXTRA_CHARGE } from "@/lib/domain/constants";
+import { HOSTEL_BLOCKS, COD_EXTRA_CHARGE, PLATFORM_FEE } from "@/lib/domain/constants";
 import { validateRoom } from "@/lib/domain/validators";
 import { money, cn } from "@/lib/utils";
+import type { Voucher } from "@/lib/types/models";
 import { PageContainer } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
@@ -28,6 +29,12 @@ export default function CartPage() {
   const [account, setAccount] = useState<string | null>(null);
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [promoCode, setPromoCode] = useState("");
+  const [additionalNote, setAdditionalNote] = useState("");
+  const [activeVouchers, setActiveVouchers] = useState<Voucher[]>([]);
+  const [appliedVoucher, setAppliedVoucher] = useState<Voucher | null>(null);
+  const [voucherError, setVoucherError] = useState<string | null>(null);
 
   const [campusClosed, setCampusClosed] = useState(false);
   const [campusName, setCampusName] = useState<string | null>(null);
@@ -76,6 +83,10 @@ export default function CartPage() {
       if (campus?.gender === "Female") {
         setIsGirlsCampus(true);
       }
+      if (campus?.id) {
+        const { data: vData } = await supabase.from("vouchers").select("*").eq("campus_id", campus.id).eq("is_active", true);
+        if (vData) setActiveVouchers(vData as Voucher[]);
+      }
 
       // Bug #12 fix: refresh cart items against the DB if stale
       const cartLines = useCart.getState().lines;
@@ -93,7 +104,43 @@ export default function CartPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const totals = computeTotals(lines, { isCod: method === "cod" });
+  let discountAmount = 0;
+  if (appliedVoucher) {
+    const sub = lines.reduce((sum, l) => sum + effectivePrice(l) * l.quantity, 0) + 
+                lines.reduce((sum, l) => sum + l.item.delivery_fee * l.quantity, 0) + 
+                PLATFORM_FEE + (method === "cod" ? COD_EXTRA_CHARGE : 0);
+    if (sub >= appliedVoucher.min_order_value) {
+      discountAmount = appliedVoucher.discount_type === "percentage" 
+        ? sub * (appliedVoucher.discount_value / 100)
+        : appliedVoucher.discount_value;
+      if (discountAmount > sub) discountAmount = sub;
+    }
+  }
+
+  const totals = computeTotals(lines, { isCod: method === "cod", discountAmount });
+
+  function applyPromo() {
+    setVoucherError(null);
+    if (!promoCode.trim()) {
+      setAppliedVoucher(null);
+      return;
+    }
+    const v = activeVouchers.find(v => v.code.toUpperCase() === promoCode.trim().toUpperCase());
+    if (!v) {
+      setVoucherError("Invalid or expired promo code");
+      setAppliedVoucher(null);
+      return;
+    }
+    const sub = lines.reduce((sum, l) => sum + effectivePrice(l) * l.quantity, 0) + 
+                lines.reduce((sum, l) => sum + l.item.delivery_fee * l.quantity, 0) + 
+                PLATFORM_FEE + (method === "cod" ? COD_EXTRA_CHARGE : 0);
+    if (sub < v.min_order_value) {
+      setVoucherError(`Minimum order value for this code is ${money(v.min_order_value)}`);
+      setAppliedVoucher(null);
+      return;
+    }
+    setAppliedVoucher(v);
+  }
 
   async function placeOrder() {
     setError(null);
@@ -130,6 +177,8 @@ export default function CartPage() {
           item_id: l.item.id,
           quantity: l.quantity,
         })),
+        p_promo_code: appliedVoucher ? appliedVoucher.code : null,
+        p_additional_note: additionalNote.trim() ? additionalNote.trim() : null,
       });
       if (error) throw new Error(error.message ?? String(error));
       const order = Array.isArray(data) ? data[0] : data;
@@ -294,6 +343,41 @@ export default function CartPage() {
         </CardBody>
       </Card>
 
+      {/* Additional Note & Promo Code */}
+      <div className="mt-5 space-y-4">
+        <Card>
+          <CardBody>
+            <Label>Additional Note (Optional)</Label>
+            <Input
+              value={additionalNote}
+              onChange={(e) => setAdditionalNote(e.target.value)}
+              placeholder="How can we please you more?"
+            />
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardBody>
+            <Label>Promo Code</Label>
+            <div className="flex gap-2">
+              <Input
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                placeholder="Enter discount code"
+                className="uppercase"
+              />
+              <Button onClick={applyPromo} variant="outline">Apply</Button>
+            </div>
+            {voucherError && <p className="mt-1 text-xs text-error">{voucherError}</p>}
+            {appliedVoucher && (
+              <p className="mt-1 text-xs text-success">
+                Promo code applied! You get {appliedVoucher.discount_type === "percentage" ? `${appliedVoucher.discount_value}% OFF` : `${money(appliedVoucher.discount_value)} OFF`}.
+              </p>
+            )}
+          </CardBody>
+        </Card>
+      </div>
+
       {/* Bill */}
       <Card className="mt-4">
         <CardBody className="space-y-2 text-sm">
@@ -301,6 +385,12 @@ export default function CartPage() {
           <Row label="Delivery fee" value={money(totals.deliveryFee)} />
           <Row label="Platform fee" value={money(totals.platformFee)} />
           {method === "cod" && <Row label="COD charges" value={money(totals.codCharge)} />}
+          {totals.discountAmount > 0 && (
+            <div className="flex items-center justify-between text-success">
+              <span>Discount</span>
+              <span>-{money(totals.discountAmount)}</span>
+            </div>
+          )}
           <Row label="GST (5%)" value={money(totals.gst)} />
           <div className="my-2 border-t border-border" />
           <div className="flex items-center justify-between text-base font-extrabold">

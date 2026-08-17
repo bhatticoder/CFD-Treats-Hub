@@ -99,12 +99,24 @@ export interface Order {
   discount_amount: number;
   total: number;
   promo_code: string | null;
+  additional_note: string | null;
   rating: number | null;
   is_preorder: boolean;
   feedback?: string | null;
   created_at: string;
   delivered_at: string | null;
   order_items?: OrderItem[];
+}
+
+export interface Voucher {
+  id: string;
+  campus_id: string;
+  code: string;
+  discount_type: "percentage" | "fixed";
+  discount_value: number;
+  min_order_value: number;
+  is_active: boolean;
+  created_at: string;
 }
 
 export interface AppNotification {

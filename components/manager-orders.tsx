@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronRight, Star } from "lucide-react";
+import { ChevronRight, Star, MessageSquareText } from "lucide-react";
 import { PageContainer } from "@/components/app-shell";
 import { Badge, EmptyState } from "@/components/ui/misc";
 import { cn } from "@/lib/utils";
@@ -100,6 +100,11 @@ export function ManagerOrders({
                       </div>
                     )}
                   </div>
+                  {o.additional_note && (
+                    <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-warn">
+                      <MessageSquareText className="h-3.5 w-3.5" /> Note attached
+                    </div>
+                  )}
                 </div>
                 <ChevronRight className="h-5 w-5 text-text-faint" />
               </Link>

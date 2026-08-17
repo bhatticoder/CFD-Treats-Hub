@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2, Info, Star } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Info, Star, MessageSquareText } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { money, cn } from "@/lib/utils";
 import { PageContainer } from "@/components/app-shell";
@@ -59,6 +59,15 @@ export function ManagerOrderDetail({ order }: { order: Order }) {
           <p className="text-lg font-extrabold text-primary">{money(order.total)}</p>
         </CardBody>
       </Card>
+
+      {order.additional_note && (
+        <div className="mt-4 rounded-2xl border border-warn/30 bg-warn/10 p-4">
+          <p className="mb-1 flex items-center gap-1.5 text-sm font-bold text-warn-dark">
+            <MessageSquareText className="h-4 w-4" /> Additional Note
+          </p>
+          <p className="text-sm font-medium text-text">{order.additional_note}</p>
+        </div>
+      )}
 
       <p className="mt-5 mb-2 font-bold text-text">Items</p>
       <div className="space-y-2">
