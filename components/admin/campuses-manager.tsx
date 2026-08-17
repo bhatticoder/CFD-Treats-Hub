@@ -32,6 +32,26 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
   // Per-campus preorder toggle state: { [campusId]: boolean }
   const [preorderLoading, setPreorderLoading] = useState<Record<string, boolean>>({});
 
+  const [globalDelivOpen, setGlobalDelivOpen] = useState(false);
+  const [globalDelivActive, setGlobalDelivActive] = useState(false);
+  const [globalDelivRoom, setGlobalDelivRoom] = useState("");
+  const [globalDelivBusy, setGlobalDelivBusy] = useState(false);
+
+  async function applyGlobalDelivery() {
+    setGlobalDelivBusy(true);
+    const supabase = createClient();
+    for (const c of campuses) {
+      await supabase.from("campuses").update({ 
+        delivery_active: globalDelivActive, 
+        collection_room: globalDelivActive ? null : globalDelivRoom 
+      }).eq("id", c.id);
+    }
+    setGlobalDelivBusy(false);
+    setGlobalDelivOpen(false);
+    router.refresh();
+  }
+
+
   function openNew() {
     setEditing(null);
     setName("");
@@ -159,7 +179,14 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
           <h1 className="text-2xl font-extrabold text-text">Campuses</h1>
           <p className="text-sm text-text-muted">Manage hostel campuses & live shift status</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => {
+            setGlobalDelivActive(true);
+            setGlobalDelivRoom("");
+            setGlobalDelivOpen(true);
+          }}>
+            Global Delivery Options
+          </Button>
           <Button variant="outline" onClick={() => openAllShifts(true)}>
             Open All Shifts
           </Button>
@@ -306,6 +333,42 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
           Are you sure you want to delete &quot;{deleting?.name}&quot;? This cannot be undone.
         </p>
         {deleteError && <p className="text-sm text-error mt-4">{deleteError}</p>}
+      </Modal>
+
+      <Modal
+        open={globalDelivOpen}
+        onClose={() => setGlobalDelivOpen(false)}
+        title="Global Delivery Options"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setGlobalDelivOpen(false)}>Cancel</Button>
+            <Button loading={globalDelivBusy} onClick={applyGlobalDelivery}>Apply to All</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-text-muted">
+            Override the delivery settings for ALL campuses at once. 
+            If you turn Delivery off, all customers will be asked to pick up their orders from the room you specify.
+          </p>
+          <div className="flex items-center justify-between rounded-xl border border-border bg-bg-muted p-3">
+            <div>
+              <Label className="mb-0">Delivery Active (All Campuses)</Label>
+              <p className="text-xs text-text-muted">Turn off to force self-pickup</p>
+            </div>
+            <Switch checked={globalDelivActive} onChange={setGlobalDelivActive} disabled={false} />
+          </div>
+          {!globalDelivActive && (
+            <div>
+              <Label>Collection Room / Hall Name</Label>
+              <Input
+                value={globalDelivRoom}
+                onChange={(e) => setGlobalDelivRoom(e.target.value)}
+                placeholder="e.g. Room 102, Boys Hall"
+              />
+            </div>
+          )}
+        </div>
       </Modal>
     </PageContainer>
   );
