@@ -21,7 +21,7 @@ export async function subscribeToPushNotifications() {
 
   try {
     // Register the service worker
-    const registration = await navigator.serviceWorker.register('/sw.js');
+    const registration = await navigator.serviceWorker.register('/service-worker.js');
     
     // Wait until it's ready
     await navigator.serviceWorker.ready;
