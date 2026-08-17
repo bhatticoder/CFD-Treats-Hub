@@ -97,6 +97,15 @@ export function OrderTracker({ initial }: { initial: Order }) {
           <CardBody className="text-center text-error">This order was cancelled.</CardBody>
         </Card>
       ) : (
+        <>
+          {order.room_number?.startsWith("Pickup: ") && (
+            <div className="mb-4 rounded-xl border border-primary/20 bg-primary/10 p-4 text-primary">
+              <p className="font-bold">Self-Pickup Required</p>
+              <p className="text-sm mt-1 text-text">
+                Please collect your order from <strong>{order.room_number.replace("Pickup: ", "")}</strong> once it is ready.
+              </p>
+            </div>
+          )}
         <Card>
           <CardBody>
             <ol className="relative ml-3 border-l-2 border-border">
@@ -122,6 +131,7 @@ export function OrderTracker({ initial }: { initial: Order }) {
             </ol>
           </CardBody>
         </Card>
+        </>
       )}
 
       <Card className="mt-4">

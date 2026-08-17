@@ -34,7 +34,7 @@ export async function subscribeToPushNotifications() {
       const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!vapidPublicKey) {
         console.error("VAPID public key not found");
-        return false;
+        throw new Error("VAPID public key is missing. Ensure NEXT_PUBLIC_VAPID_PUBLIC_KEY is set in .env.local.");
       }
 
       const convertedVapidKey = await urlBase64ToUint8Array(vapidPublicKey);
@@ -55,8 +55,8 @@ export async function subscribeToPushNotifications() {
     });
 
     return res.ok;
-  } catch (err) {
+  } catch (err: any) {
     console.error('Failed to subscribe to push notifications:', err);
-    return false;
+    throw new Error(err.message || String(err));
   }
 }

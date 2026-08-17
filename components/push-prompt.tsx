@@ -22,9 +22,15 @@ export function PushPrompt({ isManager = false }: { isManager?: boolean }) {
   }, []);
 
   const handleEnable = async () => {
-    const success = await subscribeToPushNotifications();
-    if (success || Notification.permission !== "default") {
-      setShow(false);
+    try {
+      const success = await subscribeToPushNotifications();
+      if (success || Notification.permission !== "default") {
+        setShow(false);
+      } else {
+        alert("Failed to enable notifications. Ensure your browser is not blocking them.");
+      }
+    } catch (e: any) {
+      alert("Error enabling notifications: " + (e.message || String(e)));
     }
   };
 

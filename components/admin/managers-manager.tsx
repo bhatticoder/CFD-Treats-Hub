@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { UserPlus, UserX } from "lucide-react";
+import { UserPlus, UserX, UserCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { PageContainer } from "@/components/app-shell";
 import { Card, CardBody } from "@/components/ui/card";
@@ -70,6 +70,15 @@ export function ManagersManager({
     router.refresh();
   }
 
+  async function executeReactivate(m: Profile) {
+    const { error } = await createClient()
+      .from("profiles")
+      .update({ is_active: true })
+      .eq("id", m.id);
+    if (error) alert(`Could not reactivate: ${error.message}`);
+    router.refresh();
+  }
+
   return (
     <PageContainer max="max-w-3xl">
       <div className="mb-5 flex items-center justify-between">
@@ -103,9 +112,13 @@ export function ManagersManager({
                     </div>
                   )}
                 </div>
-                {m.is_active && (
-                  <button onClick={() => confirmDeactivate(m)} className="p-2 text-error/70 hover:bg-error/10 hover:text-error rounded-xl transition-colors" title="Remove">
+                {m.is_active ? (
+                  <button onClick={() => confirmDeactivate(m)} className="p-2 text-error/70 hover:bg-error/10 hover:text-error rounded-xl transition-colors" title="Deactivate">
                     <UserX className="h-5 w-5" />
+                  </button>
+                ) : (
+                  <button onClick={() => executeReactivate(m)} className="p-2 text-success/70 hover:bg-success/10 hover:text-success rounded-xl transition-colors" title="Reactivate">
+                    <UserCheck className="h-5 w-5" />
                   </button>
                 )}
               </CardBody>
