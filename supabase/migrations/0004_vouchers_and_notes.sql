@@ -2,6 +2,44 @@
 -- Migration 0004: Vouchers and Additional Notes
 -- ==========================================================================
 
+-- Helper: preorder_is_open
+create or replace function public.preorder_is_open(p_campus_id uuid)
+returns boolean language plpgsql stable security definer as $$
+declare
+  v_campus record;
+begin
+  select preorder_open, preorder_opens_at, preorder_closes_at
+  into v_campus
+  from public.campuses where id = p_campus_id;
+  if not found then return false; end if;
+  if v_campus.preorder_open then return true; end if;
+  if v_campus.preorder_opens_at is null then return false; end if;
+  if now() < v_campus.preorder_opens_at then return false; end if;
+  if v_campus.preorder_closes_at is not null and now() > v_campus.preorder_closes_at then
+    return false;
+  end if;
+  return true;
+end;
+$$;
+
+-- Helper: generate order number
+create or replace function public.generate_order_number(p_campus_id uuid)
+returns text language plpgsql as $$
+declare
+  v_prefix text;
+  v_count  int;
+begin
+  select left(upper(replace(name, ' ', '')), 3) into v_prefix
+  from public.campuses where id = p_campus_id;
+  v_prefix := coalesce(v_prefix, 'CFD');
+  select count(*) + 1 into v_count
+  from public.orders
+  where campus_id = p_campus_id
+    and created_at >= date_trunc('day', now());
+  return v_prefix || '-' || to_char(now(), 'MMDD') || '-' || lpad(v_count::text, 3, '0');
+end;
+$$;
+
 -- 1. Add additional_note to orders
 alter table public.orders add column if not exists additional_note text;
 
@@ -20,19 +58,23 @@ create table if not exists public.vouchers (
 
 alter table public.vouchers enable row level security;
 
+drop policy if exists "Vouchers are readable by everyone" on public.vouchers;
 create policy "Vouchers are readable by everyone" on public.vouchers
   for select using (true);
 
+drop policy if exists "Vouchers are insertable by admins" on public.vouchers;
 create policy "Vouchers are insertable by admins" on public.vouchers
   for insert with check (
     exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
   );
 
+drop policy if exists "Vouchers are updatable by admins" on public.vouchers;
 create policy "Vouchers are updatable by admins" on public.vouchers
   for update using (
     exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
   );
 
+drop policy if exists "Vouchers are deletable by admins" on public.vouchers;
 create policy "Vouchers are deletable by admins" on public.vouchers
   for delete using (
     exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
@@ -55,7 +97,7 @@ declare
   v_user_id    uuid := auth.uid();
   v_campus_id  uuid;
   v_item       record;
-  v_line       jsonb;
+  v_line       record;
   v_item_total numeric := 0;
   v_del_fee    numeric := 0;
   v_platform   numeric := 5;     -- PLATFORM_FEE constant
@@ -159,7 +201,7 @@ begin
     platform_fee, cod_fee, gst, discount_amount, total, is_preorder, promo_code, additional_note
   ) values (
     v_order_id, v_order_num, v_user_id, v_campus_id, p_room_number, p_block,
-    p_payment_method, p_payment_screenshot_url, v_item_total, v_del_fee,
+    p_payment_method::public.payment_method, p_payment_screenshot_url, v_item_total, v_del_fee,
     v_platform, v_cod_charge, v_gst, v_discount_amount, v_grand, false, p_promo_code, p_additional_note
   );
 
@@ -200,7 +242,7 @@ declare
   v_user_id    uuid := auth.uid();
   v_campus_id  uuid;
   v_item       record;
-  v_line       jsonb;
+  v_line       record;
   v_item_total numeric := 0;
   v_del_fee    numeric := 0;
   v_platform   numeric := 5;
@@ -284,7 +326,7 @@ begin
     platform_fee, cod_fee, gst, discount_amount, total, is_preorder, promo_code, additional_note
   ) values (
     v_order_id, v_order_num, v_user_id, v_campus_id, p_room_number, p_block,
-    p_payment_method, p_payment_screenshot_url, v_item_total, v_del_fee,
+    p_payment_method::public.payment_method, p_payment_screenshot_url, v_item_total, v_del_fee,
     v_platform, v_cod_charge, v_gst, v_discount_amount, v_grand, true, p_promo_code, p_additional_note
   );
 
