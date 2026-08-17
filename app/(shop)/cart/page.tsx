@@ -356,47 +356,29 @@ export default function CartPage() {
           </CardBody>
         </Card>
 
-        <Card>
-          <CardBody>
-            <Label>Promo Code</Label>
-            
-            {activeVouchers.length > 0 && (
-              <div className="my-3 flex flex-wrap gap-2">
-                {activeVouchers.map((v) => (
-                  <button
-                    key={v.id}
-                    onClick={() => {
-                      setPromoCode(v.code);
-                      setVoucherError(null);
-                    }}
-                    className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-1.5 rounded-xl border border-primary/30 bg-primary-soft/50 px-3 py-2 text-left sm:text-center text-xs font-medium text-primary hover:bg-primary-soft hover:border-primary/50 transition-all active:scale-95"
-                  >
-                    <span className="font-black tracking-wide">{v.code}</span>
-                    <span className="text-[10px] sm:text-xs opacity-90 font-semibold bg-primary/10 px-1.5 py-0.5 rounded-md">
-                      {v.discount_type === "percentage" ? `${v.discount_value}% OFF` : `${money(v.discount_value)} OFF`}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
+        {activeVouchers.length > 0 && (
+          <Card>
+            <CardBody>
+              <Label>Promo Code</Label>
 
-            <div className="flex gap-2">
-              <Input
-                value={promoCode}
-                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                placeholder="Enter discount code"
-                className="uppercase"
-              />
-              <Button onClick={applyPromo} variant="outline">Apply</Button>
-            </div>
-            {voucherError && <p className="mt-1 text-xs text-error">{voucherError}</p>}
-            {appliedVoucher && (
-              <p className="mt-1 text-xs text-success">
-                Promo code applied! You get {appliedVoucher.discount_type === "percentage" ? `${appliedVoucher.discount_value}% OFF` : `${money(appliedVoucher.discount_value)} OFF`}.
-              </p>
-            )}
-          </CardBody>
-        </Card>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                  placeholder="Enter discount code"
+                  className="uppercase"
+                />
+                <Button onClick={applyPromo} variant="outline">Apply</Button>
+              </div>
+              {voucherError && <p className="mt-1 text-xs text-error">{voucherError}</p>}
+              {appliedVoucher && (
+                <p className="mt-1 text-xs text-success">
+                  Promo code applied! You get {appliedVoucher.discount_type === "percentage" ? `${appliedVoucher.discount_value}% OFF` : `${money(appliedVoucher.discount_value)} OFF`}.
+                </p>
+              )}
+            </CardBody>
+          </Card>
+        )}
       </div>
 
       {/* Bill */}
