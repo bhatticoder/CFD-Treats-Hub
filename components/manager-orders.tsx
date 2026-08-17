@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ChevronRight, Star, MessageSquareText } from "lucide-react";
 import { PageContainer } from "@/components/app-shell";
 import { Badge, EmptyState } from "@/components/ui/misc";
+import { PushPrompt } from "@/components/push-prompt";
 import { cn } from "@/lib/utils";
 import type { Campus, Order } from "@/lib/types/models";
 
@@ -43,6 +44,7 @@ export function ManagerOrders({
 
   return (
     <PageContainer max="max-w-4xl">
+      <PushPrompt isManager />
       <h1 className="text-2xl font-extrabold text-text">Today&apos;s Orders</h1>
       <p className="mb-4 text-sm text-text-muted">Sorted by block & room for routing</p>
 

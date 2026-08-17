@@ -5,7 +5,7 @@ import { subscribeToPushNotifications } from "@/lib/push";
 import { Button } from "@/components/ui/button";
 import { BellRing, X } from "lucide-react";
 
-export function PushPrompt() {
+export function PushPrompt({ isManager = false }: { isManager?: boolean }) {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -41,9 +41,13 @@ export function PushPrompt() {
         <BellRing className="h-5 w-5" />
       </div>
       <div className="flex-1 text-center sm:text-left">
-        <h3 className="font-extrabold text-accent-warm text-sm">Never miss an order</h3>
+        <h3 className="font-extrabold text-accent-warm text-sm">
+          {isManager ? "Enable Order Alerts" : "Never miss an order"}
+        </h3>
         <p className="text-xs font-medium text-text mt-0.5">
-          Enable notifications to get live updates on orders.
+          {isManager 
+            ? "Enable notifications so you hear a ping as soon as a new order comes in." 
+            : "Enable notifications to get live updates on orders."}
         </p>
       </div>
       <div className="flex gap-2 w-full sm:w-auto">
