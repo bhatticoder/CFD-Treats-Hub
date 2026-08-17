@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Building2, Trash2, Pencil, CalendarClock } from "lucide-react";
+import { Plus, Building2, Trash2, Pencil, CalendarClock, Truck, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { GENDERS, DEFAULT_DOMAIN_SUFFIX } from "@/lib/domain/constants";
 import { PageContainer } from "@/components/app-shell";
@@ -32,23 +32,32 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
   // Per-campus preorder toggle state: { [campusId]: boolean }
   const [preorderLoading, setPreorderLoading] = useState<Record<string, boolean>>({});
 
-  const [globalDelivOpen, setGlobalDelivOpen] = useState(false);
-  const [globalDelivActive, setGlobalDelivActive] = useState(false);
-  const [globalDelivRoom, setGlobalDelivRoom] = useState("");
-  const [globalDelivBusy, setGlobalDelivBusy] = useState(false);
+  const [campusDelivOpen, setCampusDelivOpen] = useState(false);
+  const [campusDelivTarget, setCampusDelivTarget] = useState<Campus | null>(null);
+  const [campusDelivActive, setCampusDelivActive] = useState(false);
+  const [campusDelivRoom, setCampusDelivRoom] = useState("");
+  const [campusDelivBusy, setCampusDelivBusy] = useState(false);
 
-  async function applyGlobalDelivery() {
-    setGlobalDelivBusy(true);
+  async function applyCampusDelivery() {
+    if (!campusDelivTarget) return;
+    setCampusDelivBusy(true);
     const supabase = createClient();
-    for (const c of campuses) {
-      await supabase.from("campuses").update({ 
-        delivery_active: globalDelivActive, 
-        collection_room: globalDelivActive ? null : globalDelivRoom 
-      }).eq("id", c.id);
-    }
-    setGlobalDelivBusy(false);
-    setGlobalDelivOpen(false);
+    await supabase.from("campuses").update({ 
+      delivery_active: campusDelivActive, 
+      collection_room: campusDelivActive ? null : campusDelivRoom 
+    }).eq("id", campusDelivTarget.id);
+    
+    setCampusDelivBusy(false);
+    setCampusDelivOpen(false);
+    setCampusDelivTarget(null);
     router.refresh();
+  }
+
+  function openDeliveryOptions(c: Campus) {
+    setCampusDelivTarget(c);
+    setCampusDelivActive(c.delivery_active ?? true);
+    setCampusDelivRoom(c.collection_room || "");
+    setCampusDelivOpen(true);
   }
 
 
@@ -180,13 +189,6 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
           <p className="text-sm text-text-muted">Manage hostel campuses & live shift status</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => {
-            setGlobalDelivActive(true);
-            setGlobalDelivRoom("");
-            setGlobalDelivOpen(true);
-          }}>
-            Global Delivery Options
-          </Button>
           <Button variant="outline" onClick={() => openAllShifts(true)}>
             Open All Shifts
           </Button>
@@ -235,7 +237,7 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
               </div>
 
               {/* Shift status & Pre-orders toggle rows */}
-              <div className="grid gap-2 sm:grid-cols-2">
+              <div className="grid gap-2 sm:grid-cols-3">
                 <div className="flex items-center gap-3 rounded-xl border border-border bg-bg-muted px-4 py-2.5">
                   <Building2 className="h-4 w-4 text-primary shrink-0" />
                   <div className="flex-1">
@@ -265,6 +267,22 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
                     disabled={preorderLoading[c.id]}
                   />
                 </div>
+
+                <button
+                  onClick={() => openDeliveryOptions(c)}
+                  className="flex items-center gap-3 rounded-xl border border-border bg-bg-muted px-4 py-2.5 hover:bg-bg-subtle transition-colors"
+                >
+                  <Truck className="h-4 w-4 text-primary shrink-0" />
+                  <div className="flex-1 text-left">
+                    <p className="text-sm font-medium text-text">Delivery</p>
+                    {c.delivery_active ? (
+                      <p className="text-xs text-text-muted">Active</p>
+                    ) : (
+                      <p className="text-xs text-error font-medium truncate">Pickup: {c.collection_room}</p>
+                    )}
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-text-muted shrink-0" />
+                </button>
               </div>
             </CardBody>
           </Card>
@@ -336,34 +354,34 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
       </Modal>
 
       <Modal
-        open={globalDelivOpen}
-        onClose={() => setGlobalDelivOpen(false)}
-        title="Global Delivery Options"
+        open={campusDelivOpen}
+        onClose={() => setCampusDelivOpen(false)}
+        title={`Delivery Options (${campusDelivTarget?.name})`}
         footer={
           <>
-            <Button variant="outline" onClick={() => setGlobalDelivOpen(false)}>Cancel</Button>
-            <Button loading={globalDelivBusy} onClick={applyGlobalDelivery}>Apply to All</Button>
+            <Button variant="outline" onClick={() => setCampusDelivOpen(false)}>Cancel</Button>
+            <Button loading={campusDelivBusy} onClick={applyCampusDelivery}>Apply</Button>
           </>
         }
       >
         <div className="space-y-4">
           <p className="text-sm text-text-muted">
-            Override the delivery settings for ALL campuses at once. 
-            If you turn Delivery off, all customers will be asked to pick up their orders from the room you specify.
+            Configure delivery settings for this campus. 
+            If you turn Delivery off, customers will be asked to pick up their orders from the room you specify.
           </p>
           <div className="flex items-center justify-between rounded-xl border border-border bg-bg-muted p-3">
             <div>
-              <Label className="mb-0">Delivery Active (All Campuses)</Label>
+              <Label className="mb-0">Delivery Active</Label>
               <p className="text-xs text-text-muted">Turn off to force self-pickup</p>
             </div>
-            <Switch checked={globalDelivActive} onChange={setGlobalDelivActive} disabled={false} />
+            <Switch checked={campusDelivActive} onChange={setCampusDelivActive} disabled={false} />
           </div>
-          {!globalDelivActive && (
+          {!campusDelivActive && (
             <div>
               <Label>Collection Room / Hall Name</Label>
               <Input
-                value={globalDelivRoom}
-                onChange={(e) => setGlobalDelivRoom(e.target.value)}
+                value={campusDelivRoom}
+                onChange={(e) => setCampusDelivRoom(e.target.value)}
                 placeholder="e.g. Room 102, Boys Hall"
               />
             </div>
