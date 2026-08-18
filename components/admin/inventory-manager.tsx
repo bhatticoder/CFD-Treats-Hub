@@ -327,15 +327,11 @@ export function InventoryManager({
               <Input inputMode="numeric" value={draft.price} onChange={(e) => setDraft({ ...draft, price: e.target.value })} />
             </div>
             <div>
-              <Label>Stock</Label>
-              <Input inputMode="numeric" value={draft.stock_quantity} onChange={(e) => setDraft({ ...draft, stock_quantity: e.target.value })} />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
               <Label>Delivery fee</Label>
               <Input inputMode="numeric" value={draft.delivery_fee} onChange={(e) => setDraft({ ...draft, delivery_fee: e.target.value })} />
             </div>
+          </div>
+          <div className="grid grid-cols-1">
             <div>
               <Label>Category</Label>
               <Select value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })}>
