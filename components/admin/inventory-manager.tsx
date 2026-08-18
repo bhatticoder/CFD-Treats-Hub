@@ -24,7 +24,7 @@ type Draft = {
   custom_instruction: string;
   is_available: boolean;
   restaurant_id: string;
-  campus_id: string;
+  campus_ids: string[];
   expected_arrival: string;
   is_preorder: boolean;
 };
@@ -39,7 +39,7 @@ const empty: Draft = {
   custom_instruction: "",
   is_available: true,
   restaurant_id: "",
-  campus_id: "",
+  campus_ids: [],
   expected_arrival: "",
   is_preorder: false,
 };
@@ -88,7 +88,7 @@ export function InventoryManager({
       custom_instruction: item.custom_instruction ?? "",
       is_available: item.is_available,
       restaurant_id: item.restaurant_id ?? "",
-      campus_id: item.campus_id ?? "",
+      campus_ids: item.campus_id ? [item.campus_id] : [],
       expected_arrival: item.expected_arrival ?? "",
       is_preorder: item.is_preorder,
     });
@@ -100,7 +100,7 @@ export function InventoryManager({
 
   async function save() {
     if (!draft.name.trim()) return setError("Name is required");
-    if (!draft.campus_id) return setError("Campus is required");
+    if (draft.campus_ids.length === 0) return setError("At least one campus is required");
     setBusy(true);
     setError(null);
     const supabase = createClient();
@@ -124,15 +124,31 @@ export function InventoryManager({
         custom_instruction: draft.custom_instruction.trim() || null,
         is_available: draft.is_available,
         image_url: imageUrl,
-        campus_id: draft.campus_id,
         restaurant_id: draft.restaurant_id || null,
         expected_arrival: draft.expected_arrival.trim() || null,
         is_preorder: draft.is_preorder,
       };
-      const { error } = editing
-        ? await supabase.from("items").update(payload).eq("id", editing.id)
-        : await supabase.from("items").insert(payload);
-      if (error) throw error;
+
+      if (editing) {
+        // Update the current item's original campus
+        const originalCampus = editing.campus_id;
+        const { error: upErr } = await supabase.from("items").update({ ...payload, campus_id: originalCampus }).eq("id", editing.id);
+        if (upErr) throw upErr;
+        
+        // If they selected additional campuses during edit, duplicate the item for them!
+        const newCampuses = draft.campus_ids.filter(id => id !== originalCampus);
+        if (newCampuses.length > 0) {
+          const inserts = newCampuses.map(id => ({ ...payload, campus_id: id }));
+          const { error: insErr } = await supabase.from("items").insert(inserts);
+          if (insErr) throw insErr;
+        }
+      } else {
+        // Bulk insert for all selected campuses
+        const inserts = draft.campus_ids.map(id => ({ ...payload, campus_id: id }));
+        const { error: insErr } = await supabase.from("items").insert(inserts);
+        if (insErr) throw insErr;
+      }
+
       setOpen(false);
       router.refresh();
     } catch (e) {
@@ -331,19 +347,32 @@ export function InventoryManager({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Campus</Label>
-              <Select value={draft.campus_id} onChange={(e) => setDraft({ ...draft, campus_id: e.target.value })}>
-                <option value="">Select Campus</option>
+              <Label>Campus (Select multiple)</Label>
+              <div className="flex flex-col gap-2 mt-2">
                 {campuses.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
+                  <label key={c.id} className="flex items-center gap-2 cursor-pointer text-sm text-text">
+                    <input
+                      type="checkbox"
+                      checked={draft.campus_ids.includes(c.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setDraft({ ...draft, campus_ids: [...draft.campus_ids, c.id] });
+                        } else {
+                          setDraft({ ...draft, campus_ids: draft.campus_ids.filter((id) => id !== c.id) });
+                        }
+                      }}
+                      className="h-4 w-4 rounded border-border text-primary focus:ring-primary bg-surface"
+                    />
+                    {c.name}
+                  </label>
                 ))}
-              </Select>
+              </div>
             </div>
             <div>
               <Label>Restaurant (optional)</Label>
               <Select value={draft.restaurant_id} onChange={(e) => setDraft({ ...draft, restaurant_id: e.target.value })}>
                 <option value="">None (In-house)</option>
-                {restaurants.filter(r => r.campus_id === draft.campus_id || !draft.campus_id).map((r) => (
+                {restaurants.filter(r => draft.campus_ids.includes(r.campus_id) || draft.campus_ids.length === 0).map((r) => (
                   <option key={r.id} value={r.id}>{r.name}</option>
                 ))}
               </Select>

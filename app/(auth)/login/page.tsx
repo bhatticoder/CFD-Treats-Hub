@@ -47,7 +47,7 @@ export default function LoginPage() {
             className="h-20 w-20 rounded-2xl object-contain shrink-0"
           />
           <div className="text-left">
-            <h1 className="text-2xl font-extrabold text-text leading-tight">CFD Hostel Treats</h1>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-text leading-tight whitespace-nowrap">CFD Hostel Treats</h1>
             <p className="text-sm italic text-primary">– Cravings Fulfilled Daily –</p>
           </div>
         </div>
