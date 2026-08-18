@@ -105,7 +105,7 @@ export function AppShell({
       {brandMark}
       <div>
         <p className="text-sm font-bold leading-tight text-text">{brand}</p>
-        <p className="text-xs text-text-faint">CFD Hostel Treats</p>
+        <p className="text-xs text-text-faint">CFD Treats Hub</p>
       </div>
     </div>
   );

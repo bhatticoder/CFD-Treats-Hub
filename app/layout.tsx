@@ -10,7 +10,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "CFD Hostel Treats — Cravings Fulfilled Daily",
+  title: "CFD Treats Hub — Cravings Fulfilled Daily",
   description:
     "Order late-night treats to your hostel room. Fast campus food delivery.",
 };
