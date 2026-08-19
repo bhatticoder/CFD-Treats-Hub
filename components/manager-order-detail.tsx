@@ -16,7 +16,7 @@ export function ManagerOrderDetail({ order }: { order: Order }) {
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const delivered = order.order_status === "delivered";
+  const delivered = order.order_status === "delivered" || order.order_status === "cancelled";
 
   async function setStatus(status: string) {
     setBusy(true);
@@ -26,9 +26,24 @@ export function ManagerOrderDetail({ order }: { order: Order }) {
       status === "delivered"
         ? await supabase.rpc("mark_delivered", { p_order_id: order.id })
         : await supabase.from("orders").update({ order_status: status }).eq("id", order.id);
+
+    if (status === "cancelled") {
+      // Send push notification just like Admin does
+      fetch("/api/push/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userIds: [order.customer_id],
+          title: "Order Cancelled ❌",
+          message: `Your order #${order.order_number} was cancelled.`,
+          url: `/track/${order.id}`
+        })
+      }).catch(() => {});
+    }
+
     setBusy(false);
     if (error) return setError(error.message);
-    if (status === "delivered") {
+    if (status === "delivered" || status === "cancelled") {
       router.push("/manager");
       router.refresh();
     } else {
@@ -123,30 +138,48 @@ export function ManagerOrderDetail({ order }: { order: Order }) {
               Out for delivery
             </Button>
           )}
-          {!confirming ? (
-            <Button variant="success" size="lg" className="w-full" onClick={() => setConfirming(true)}>
-              <CheckCircle2 className="h-5 w-5" /> DELIVER
-            </Button>
-          ) : (
-            <div className="rounded-2xl border border-success/40 bg-success/5 p-4">
-              <p className="mb-3 text-center text-sm font-medium">Mark this order delivered?</p>
-              <div className="flex gap-3">
-                <Button variant="outline" className="flex-1" onClick={() => setConfirming(false)}>
-                  Cancel
+          
+          <div className="flex items-center gap-3">
+            {!confirming ? (
+              <>
+                <Button variant="danger" className="flex-1" loading={busy} onClick={() => {
+                  if (confirm("Are you sure you want to CANCEL this order? This cannot be undone.")) {
+                    setStatus("cancelled");
+                  }
+                }}>
+                  Cancel Order
                 </Button>
-                <Button variant="success" className="flex-1" loading={busy} onClick={() => setStatus("delivered")}>
-                  Confirm
+                <Button variant="success" size="lg" className="flex-[2]" onClick={() => setConfirming(true)}>
+                  <CheckCircle2 className="h-5 w-5" /> DELIVER
                 </Button>
+              </>
+            ) : (
+              <div className="w-full rounded-2xl border border-success/40 bg-success/5 p-4">
+                <p className="mb-3 text-center text-sm font-medium">Mark this order delivered?</p>
+                <div className="flex gap-3">
+                  <Button variant="outline" className="flex-1" onClick={() => setConfirming(false)}>
+                    Back
+                  </Button>
+                  <Button variant="success" className="flex-1" loading={busy} onClick={() => setStatus("delivered")}>
+                    Confirm
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       ) : (
-        <div className="mt-6 flex flex-col items-center justify-center gap-2 rounded-2xl bg-success/10 p-4 font-bold text-success">
+        <div className={cn("mt-6 flex flex-col items-center justify-center gap-2 rounded-2xl p-4 font-bold", 
+          order.order_status === "cancelled" ? "bg-error/10 text-error" : "bg-success/10 text-success"
+        )}>
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5" /> Delivered
+            {order.order_status === "cancelled" ? (
+              <><CheckCircle2 className="h-5 w-5 opacity-0 hidden" /> Cancelled</>
+            ) : (
+              <><CheckCircle2 className="h-5 w-5" /> Delivered</>
+            )}
           </div>
-          {order.rating && (
+          {order.rating && order.order_status === "delivered" && (
             <div className="mt-3 flex flex-col items-center gap-1 w-full border-t border-success/20 pt-3">
               <div className="flex items-center gap-1 text-primary">
                 {[...Array(5)].map((_, i) => (
