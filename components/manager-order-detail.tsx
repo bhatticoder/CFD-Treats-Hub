@@ -33,6 +33,8 @@ export function ManagerOrderDetail({ order }: { order: Order }) {
     const { error } =
       status === "delivered"
         ? await supabase.rpc("mark_delivered", { p_order_id: order.id })
+        : status === "cancelled"
+        ? await supabase.rpc("manager_cancel_order", { p_order_id: order.id, p_reason: cancelReason.trim() || null })
         : await supabase.from("orders").update(updatePayload).eq("id", order.id);
 
     if (status === "cancelled") {
