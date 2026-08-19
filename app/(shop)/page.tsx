@@ -45,6 +45,15 @@ export default async function MenuPage() {
     .order("category")
     .order("name");
 
+  // Fetch all categories for this campus
+  const { data: rawCategories } = await supabase
+    .from("item_categories")
+    .select("name")
+    .eq("campus_id", campusId ?? "")
+    .order("name");
+  
+  const allCategories = rawCategories ? rawCategories.map((c) => c.name) : [];
+
   // Filter out items belonging to hidden restaurants.
   const items = ((rawItems as Item[]) ?? []).filter(
     (i) => !i.restaurant_id || activeRestIds.has(i.restaurant_id),
@@ -60,6 +69,7 @@ export default async function MenuPage() {
       <PushPrompt />
       <MenuBrowser
         items={items}
+        categories={allCategories}
         shiftActive={shiftActive}
         preordersOpen={preordersOpen}
         firstName={firstName}

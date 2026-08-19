@@ -12,6 +12,7 @@ import type { Item } from "@/lib/types/models";
 
 export function MenuBrowser({
   items,
+  categories = [],
   shiftActive,
   preordersOpen,
   firstName,
@@ -20,6 +21,7 @@ export function MenuBrowser({
   collectionRoom = null,
 }: {
   items: Item[];
+  categories?: string[];
   shiftActive: boolean;
   preordersOpen: boolean;
   firstName: string;
@@ -40,16 +42,16 @@ export function MenuBrowser({
     return ["All", ...Array.from(set).sort()];
   }, [items]);
 
-  // Distinct categories present in this campus's items.
+  // Distinct categories present in this campus's items + all admin-defined categories
   const dynamicCategories = useMemo(() => {
-    const set = new Set<string>();
+    const set = new Set<string>(categories);
     items.forEach((i) => {
       if (i.category) {
         i.category.split(',').forEach(c => set.add(c.trim()));
       }
     });
     return ["All", ...Array.from(set).filter(Boolean).sort()];
-  }, [items]);
+  }, [items, categories]);
 
   // Category and restaurant filters combine (both can be active at once).
   const visible = useMemo(
