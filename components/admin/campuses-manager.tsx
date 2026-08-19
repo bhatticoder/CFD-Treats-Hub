@@ -23,6 +23,9 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
   const [codCap, setCodCap] = useState("100");
   const [deliveryActive, setDeliveryActive] = useState(true);
   const [collectionRoom, setCollectionRoom] = useState("");
+  const [platformFee, setPlatformFee] = useState("5");
+  const [codCharge, setCodCharge] = useState("30");
+  const [gstPct, setGstPct] = useState("5");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -75,6 +78,9 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
     setCodCap("100");
     setDeliveryActive(true);
     setCollectionRoom("");
+    setPlatformFee("5");
+    setCodCharge("30");
+    setGstPct("5");
     setError(null);
     setOpen(true);
   }
@@ -87,6 +93,9 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
     setCodCap(String(c.cod_cap_percent ?? 100));
     setDeliveryActive(c.delivery_active ?? true);
     setCollectionRoom(c.collection_room || "");
+    setPlatformFee(String(c.platform_fee ?? 5));
+    setCodCharge(String(c.cod_charge ?? 30));
+    setGstPct(String(c.gst_percentage ?? 5));
     setError(null);
     setOpen(true);
   }
@@ -103,6 +112,9 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
       cod_cap_percent: Number(codCap) || 100,
       delivery_active: deliveryActive,
       collection_room: !deliveryActive ? collectionRoom.trim() : null,
+      platform_fee: Number(platformFee) || 0,
+      cod_charge: Number(codCharge) || 0,
+      gst_percentage: Number(gstPct) || 0,
     };
 
     const { error: err } = editing
@@ -319,6 +331,20 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
             <div>
               <Label>COD cap %</Label>
               <Input inputMode="numeric" value={codCap} onChange={(e) => setCodCap(e.target.value.replace(/\D/g, ""))} />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <Label>Platform Fee</Label>
+              <Input inputMode="numeric" value={platformFee} onChange={(e) => setPlatformFee(e.target.value.replace(/\D/g, ""))} />
+            </div>
+            <div>
+              <Label>COD Charge</Label>
+              <Input inputMode="numeric" value={codCharge} onChange={(e) => setCodCharge(e.target.value.replace(/\D/g, ""))} />
+            </div>
+            <div>
+              <Label>GST (%)</Label>
+              <Input inputMode="numeric" value={gstPct} onChange={(e) => setGstPct(e.target.value.replace(/\D/g, ""))} />
             </div>
           </div>
           <div className="flex items-center justify-between rounded-xl border border-border bg-bg-muted p-3">

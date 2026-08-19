@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Minus, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
+import { Plus, Minus, Pencil, Trash2, Eye, EyeOff, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { money } from "@/lib/utils";
 import { CATEGORIES } from "@/lib/domain/constants";
@@ -441,6 +441,8 @@ function StockCell({ item }: { item: Item }) {
     setSaving(false);
   }
 
+  const isDirty = stock !== item.stock_quantity;
+
   return (
     <div className="flex items-center gap-1">
       <span className="mr-1 text-xs text-text-muted">Stock</span>
@@ -455,9 +457,8 @@ function StockCell({ item }: { item: Item }) {
         value={stock}
         inputMode="numeric"
         onChange={(e) => setStock(Number(e.target.value.replace(/\D/g, "")) || 0)}
-        onBlur={() => persist(stock)}
         onKeyDown={(e) => {
-          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          if (e.key === "Enter") persist(stock);
         }}
         className={`h-6 w-12 rounded-md border border-border bg-surface text-center text-sm ${
           stock <= 5 ? "text-error" : "text-text"
@@ -470,6 +471,15 @@ function StockCell({ item }: { item: Item }) {
       >
         <Plus className="h-3.5 w-3.5" />
       </button>
+      {isDirty && !saving && (
+        <button
+          onClick={() => persist(stock)}
+          className="ml-1 grid h-6 w-6 place-items-center rounded-md bg-success/10 text-success hover:bg-success/20"
+          title="Save stock value"
+        >
+          <Check className="h-4 w-4 stroke-[3]" />
+        </button>
+      )}
       {saving && (
         <span className="ml-1 h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       )}

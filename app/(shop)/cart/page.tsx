@@ -37,6 +37,7 @@ export default function CartPage() {
   const [voucherError, setVoucherError] = useState<string | null>(null);
 
   const [campusClosed, setCampusClosed] = useState(false);
+  const [campus, setCampus] = useState<Campus | null>(null);
   const [campusName, setCampusName] = useState<string | null>(null);
   const [isGirlsCampus, setIsGirlsCampus] = useState(false);
   const [deliveryActive, setDeliveryActive] = useState(true);
@@ -58,7 +59,7 @@ export default function CartPage() {
       if (prof?.block) setBlock(prof.block);
 
       let rawCampus = prof?.campuses;
-      let campus = (Array.isArray(rawCampus) ? rawCampus[0] : rawCampus) as { id?: string; name?: string; payment_account_info?: string; shift_active?: boolean; gender?: string; delivery_active?: boolean; collection_room?: string | null } | null;
+      let userCampus = (Array.isArray(rawCampus) ? rawCampus[0] : rawCampus) as Campus | null;
 
       // Auto-heal missing profile campus_id if user doesn't have one set yet
       if (!prof?.campus_id) {
@@ -73,26 +74,27 @@ export default function CartPage() {
             .from("profiles")
             .update({ campus_id: defaultCampus.id })
             .eq("id", userData.user.id);
-          campus = defaultCampus;
+          userCampus = defaultCampus as Campus;
         }
       }
 
-      if (campus?.name) setCampusName(campus.name);
-      if (campus?.payment_account_info) setAccount(campus.payment_account_info);
-      if (campus && campus.shift_active === false) {
+      if (userCampus) setCampus(userCampus);
+      if (userCampus?.name) setCampusName(userCampus.name);
+      if (userCampus?.payment_account_info) setAccount(userCampus.payment_account_info);
+      if (userCampus && userCampus.shift_active === false) {
         setCampusClosed(true);
       }
-      if (campus?.gender === "Female") {
+      if (userCampus?.gender === "Female") {
         setIsGirlsCampus(true);
       }
-      if (campus?.delivery_active !== undefined) {
-        setDeliveryActive(campus.delivery_active);
+      if (userCampus?.delivery_active !== undefined) {
+        setDeliveryActive(userCampus.delivery_active);
       }
-      if (campus?.collection_room !== undefined) {
-        setCollectionRoom(campus.collection_room);
+      if (userCampus?.collection_room !== undefined) {
+        setCollectionRoom(userCampus.collection_room);
       }
-      if (campus?.id) {
-        const { data: vData } = await supabase.from("vouchers").select("*").eq("campus_id", campus.id).eq("is_active", true);
+      if (userCampus?.id) {
+        const { data: vData } = await supabase.from("vouchers").select("*").eq("campus_id", userCampus.id).eq("is_active", true);
         if (vData) setActiveVouchers(vData as Voucher[]);
       }
 
@@ -116,7 +118,7 @@ export default function CartPage() {
   if (appliedVoucher) {
     const sub = lines.reduce((sum, l) => sum + effectivePrice(l) * l.quantity, 0) + 
                 lines.reduce((sum, l) => sum + l.item.delivery_fee * l.quantity, 0) + 
-                PLATFORM_FEE + (method === "cod" ? COD_EXTRA_CHARGE : 0);
+                (campus?.platform_fee ?? PLATFORM_FEE) + (method === "cod" ? (campus?.cod_charge ?? COD_EXTRA_CHARGE) : 0);
     if (sub >= appliedVoucher.min_order_value) {
       discountAmount = appliedVoucher.discount_type === "percentage" 
         ? sub * (appliedVoucher.discount_value / 100)
@@ -125,7 +127,7 @@ export default function CartPage() {
     }
   }
 
-  const totals = computeTotals(lines, { isCod: method === "cod", discountAmount });
+  const totals = computeTotals(lines, { isCod: method === "cod", discountAmount, campus });
 
   function applyPromo() {
     setVoucherError(null);
@@ -141,7 +143,7 @@ export default function CartPage() {
     }
     const sub = lines.reduce((sum, l) => sum + effectivePrice(l) * l.quantity, 0) + 
                 lines.reduce((sum, l) => sum + l.item.delivery_fee * l.quantity, 0) + 
-                PLATFORM_FEE + (method === "cod" ? COD_EXTRA_CHARGE : 0);
+                (campus?.platform_fee ?? PLATFORM_FEE) + (method === "cod" ? (campus?.cod_charge ?? COD_EXTRA_CHARGE) : 0);
     if (sub < v.min_order_value) {
       setVoucherError(`Minimum order value for this code is ${money(v.min_order_value)}`);
       setAppliedVoucher(null);
@@ -335,7 +337,7 @@ export default function CartPage() {
                       : "border-border text-text-muted",
                   )}
                 >
-                  {m === "online" ? "Online payment" : `COD (+${money(COD_EXTRA_CHARGE)})`}
+                  {m === "online" ? "Online payment" : `COD (+${money(campus?.cod_charge ?? COD_EXTRA_CHARGE)})`}
                 </button>
               ))}
             </div>
@@ -428,7 +430,7 @@ export default function CartPage() {
               <span>-{money(totals.discountAmount)}</span>
             </div>
           )}
-          <Row label="GST (5%)" value={money(totals.gst)} />
+          <Row label={`GST (${campus?.gst_percentage ?? 5}%)`} value={money(totals.gst)} />
           <div className="my-2 border-t border-border" />
           <div className="flex items-center justify-between text-base font-extrabold">
             <span>Grand total</span>

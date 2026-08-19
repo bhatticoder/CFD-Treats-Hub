@@ -20,6 +20,9 @@ export interface Campus {
   delivery_active: boolean;
   collection_room: string | null;
   whatsapp_number: string | null;
+  platform_fee: number;
+  cod_charge: number;
+  gst_percentage: number;
   created_at: string;
 }
 
