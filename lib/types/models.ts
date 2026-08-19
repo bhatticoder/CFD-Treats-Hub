@@ -112,6 +112,7 @@ export interface Order {
   additional_note: string | null;
   rating: number | null;
   is_preorder: boolean;
+  cancel_reason?: string | null;
   feedback?: string | null;
   created_at: string;
   delivered_at: string | null;

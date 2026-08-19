@@ -93,8 +93,13 @@ export function OrderTracker({ initial }: { initial: Order }) {
       </div>
 
       {cancelled ? (
-        <Card>
-          <CardBody className="text-center text-error">This order was cancelled.</CardBody>
+        <Card className="border-error/20 bg-error/5">
+          <CardBody className="text-center">
+            <h2 className="text-lg font-bold text-error mb-1">Order Cancelled</h2>
+            <p className="text-sm font-medium text-error/80">
+              {order.cancel_reason ? `Reason: ${order.cancel_reason}` : "This order was cancelled."}
+            </p>
+          </CardBody>
         </Card>
       ) : (
         <>

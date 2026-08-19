@@ -9,12 +9,15 @@ import { PageContainer } from "@/components/app-shell";
 import { Card, CardBody } from "@/components/ui/card";
 import { Badge } from "@/components/ui/misc";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/input";
 import type { Order } from "@/lib/types/models";
 
 export function ManagerOrderDetail({ order }: { order: Order }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
   const [error, setError] = useState<string | null>(null);
   const delivered = order.order_status === "delivered" || order.order_status === "cancelled";
 
@@ -22,10 +25,15 @@ export function ManagerOrderDetail({ order }: { order: Order }) {
     setBusy(true);
     setError(null);
     const supabase = createClient();
+    const updatePayload: any = { order_status: status };
+    if (status === "cancelled" && cancelReason.trim()) {
+      updatePayload.cancel_reason = cancelReason.trim();
+    }
+
     const { error } =
       status === "delivered"
         ? await supabase.rpc("mark_delivered", { p_order_id: order.id })
-        : await supabase.from("orders").update({ order_status: status }).eq("id", order.id);
+        : await supabase.from("orders").update(updatePayload).eq("id", order.id);
 
     if (status === "cancelled") {
       // Send push notification just like Admin does
@@ -35,7 +43,9 @@ export function ManagerOrderDetail({ order }: { order: Order }) {
         body: JSON.stringify({
           userIds: [order.customer_id],
           title: "Order Cancelled ❌",
-          message: `Your order #${order.order_number} was cancelled.`,
+          message: cancelReason.trim() 
+            ? `Your order #${order.order_number} was cancelled. Reason: ${cancelReason.trim()}`
+            : `Your order #${order.order_number} was cancelled.`,
           url: `/track/${order.id}`
         })
       }).catch(() => {});
@@ -139,21 +149,42 @@ export function ManagerOrderDetail({ order }: { order: Order }) {
             </Button>
           )}
           
-          <div className="flex items-center gap-3">
-            {!confirming ? (
-              <>
-                <Button variant="danger" className="flex-1" loading={busy} onClick={() => {
-                  if (confirm("Are you sure you want to CANCEL this order? This cannot be undone.")) {
-                    setStatus("cancelled");
-                  }
-                }}>
+          <div className="flex flex-col gap-3">
+            {!confirming && !cancelling && (
+              <div className="flex items-center gap-3">
+                <Button variant="danger" className="flex-1" loading={busy} onClick={() => setCancelling(true)}>
                   Cancel Order
                 </Button>
                 <Button variant="success" size="lg" className="flex-[2]" onClick={() => setConfirming(true)}>
                   <CheckCircle2 className="h-5 w-5" /> DELIVER
                 </Button>
-              </>
-            ) : (
+              </div>
+            )}
+            
+            {cancelling && (
+              <div className="w-full rounded-2xl border border-error/40 bg-error/5 p-4">
+                <p className="mb-2 text-sm font-bold text-error">Cancel Order</p>
+                <Textarea
+                  placeholder="Reason for cancellation (e.g. Invalid payment screenshot, item out of stock)"
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  className="mb-3 w-full border-error/30 bg-surface/50"
+                />
+                <div className="flex gap-3">
+                  <Button variant="outline" className="flex-1" onClick={() => {
+                    setCancelling(false);
+                    setCancelReason("");
+                  }}>
+                    Back
+                  </Button>
+                  <Button variant="danger" className="flex-1" loading={busy} onClick={() => setStatus("cancelled")}>
+                    Confirm Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {confirming && (
               <div className="w-full rounded-2xl border border-success/40 bg-success/5 p-4">
                 <p className="mb-3 text-center text-sm font-medium">Mark this order delivered?</p>
                 <div className="flex gap-3">
