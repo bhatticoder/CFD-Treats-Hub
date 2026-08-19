@@ -16,6 +16,7 @@ import {
   ClipboardList,
   Power,
   Ticket,
+  Calculator,
 } from "lucide-react";
 import { AppShell, type NavItem } from "@/components/app-shell";
 
@@ -28,6 +29,7 @@ const items: NavItem[] = [
   { href: "/admin/orders", label: "Orders", icon: ReceiptText },
   { href: "/admin/managers", label: "Managers", icon: Users },
   { href: "/admin/campuses", label: "Campuses", icon: Building2 },
+  { href: "/admin/charges", label: "Charges", icon: Calculator },
   { href: "/admin/discounts", label: "Discounts", icon: Tag },
   { href: "/admin/vouchers", label: "Vouchers", icon: Ticket },
   { href: "/admin/reports", label: "Reports", icon: BarChart3 },

@@ -114,11 +114,24 @@ export default function CartPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const isPreorder = lines.some(l => l.item.is_preorder);
   let discountAmount = 0;
   if (appliedVoucher) {
+    const deliveryFee = isPreorder
+      ? (campus?.preorder_delivery_fee ?? 0)
+      : (campus?.regular_delivery_fee ?? 0);
+    const platformFee = isPreorder
+      ? (campus?.preorder_platform_fee ?? PLATFORM_FEE)
+      : (campus?.regular_platform_fee ?? PLATFORM_FEE);
+    const codCharge = method === "cod"
+      ? isPreorder
+        ? (campus?.preorder_cod_charge ?? COD_EXTRA_CHARGE)
+        : (campus?.regular_cod_charge ?? COD_EXTRA_CHARGE)
+      : 0;
+
     const sub = lines.reduce((sum, l) => sum + effectivePrice(l) * l.quantity, 0) + 
-                lines.reduce((sum, l) => sum + l.item.delivery_fee * l.quantity, 0) + 
-                (campus?.platform_fee ?? PLATFORM_FEE) + (method === "cod" ? (campus?.cod_charge ?? COD_EXTRA_CHARGE) : 0);
+                deliveryFee + platformFee + codCharge;
+    
     if (sub >= appliedVoucher.min_order_value) {
       discountAmount = appliedVoucher.discount_type === "percentage" 
         ? sub * (appliedVoucher.discount_value / 100)
@@ -141,9 +154,20 @@ export default function CartPage() {
       setAppliedVoucher(null);
       return;
     }
+    const deliveryFee = isPreorder
+      ? (campus?.preorder_delivery_fee ?? 0)
+      : (campus?.regular_delivery_fee ?? 0);
+    const platformFee = isPreorder
+      ? (campus?.preorder_platform_fee ?? PLATFORM_FEE)
+      : (campus?.regular_platform_fee ?? PLATFORM_FEE);
+    const codCharge = method === "cod"
+      ? isPreorder
+        ? (campus?.preorder_cod_charge ?? COD_EXTRA_CHARGE)
+        : (campus?.regular_cod_charge ?? COD_EXTRA_CHARGE)
+      : 0;
+
     const sub = lines.reduce((sum, l) => sum + effectivePrice(l) * l.quantity, 0) + 
-                lines.reduce((sum, l) => sum + l.item.delivery_fee * l.quantity, 0) + 
-                (campus?.platform_fee ?? PLATFORM_FEE) + (method === "cod" ? (campus?.cod_charge ?? COD_EXTRA_CHARGE) : 0);
+                deliveryFee + platformFee + codCharge;
     if (sub < v.min_order_value) {
       setVoucherError(`Minimum order value for this code is ${money(v.min_order_value)}`);
       setAppliedVoucher(null);
@@ -337,7 +361,11 @@ export default function CartPage() {
                       : "border-border text-text-muted",
                   )}
                 >
-                  {m === "online" ? "Online payment" : `COD (+${money(campus?.cod_charge ?? COD_EXTRA_CHARGE)})`}
+                  {m === "online" ? "Online payment" : `COD (+${money(
+                    isPreorder 
+                      ? (campus?.preorder_cod_charge ?? COD_EXTRA_CHARGE) 
+                      : (campus?.regular_cod_charge ?? COD_EXTRA_CHARGE)
+                  )})`}
                 </button>
               ))}
             </div>
@@ -430,7 +458,7 @@ export default function CartPage() {
               <span>-{money(totals.discountAmount)}</span>
             </div>
           )}
-          <Row label={`GST (${campus?.gst_percentage ?? 5}%)`} value={money(totals.gst)} />
+          <Row label={`GST (${isPreorder ? (campus?.preorder_gst ?? 5) : (campus?.regular_gst ?? 5)}%)`} value={money(totals.gst)} />
           <div className="my-2 border-t border-border" />
           <div className="flex items-center justify-between text-base font-extrabold">
             <span>Grand total</span>

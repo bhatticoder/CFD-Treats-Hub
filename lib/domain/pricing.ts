@@ -25,18 +25,29 @@ export function computeTotals(
     (sum, l) => sum + effectivePrice(l) * l.quantity,
     0,
   );
-  const deliveryFee = lines.reduce(
-    (sum, l) => sum + l.item.delivery_fee * l.quantity,
-    0,
-  );
-  
-  const platformFee = campus?.platform_fee ?? PLATFORM_FEE;
-  const codCharge = opts.isCod ? (campus?.cod_charge ?? COD_EXTRA_CHARGE) : 0;
+  const isPreorder = lines.some(l => l.item.is_preorder);
+
+  const deliveryFee = isPreorder
+    ? (campus?.preorder_delivery_fee ?? 0)
+    : (campus?.regular_delivery_fee ?? 0);
+
+  const platformFee = isPreorder
+    ? (campus?.preorder_platform_fee ?? PLATFORM_FEE)
+    : (campus?.regular_platform_fee ?? PLATFORM_FEE);
+
+  const codCharge = opts.isCod
+    ? isPreorder
+      ? (campus?.preorder_cod_charge ?? COD_EXTRA_CHARGE)
+      : (campus?.regular_cod_charge ?? COD_EXTRA_CHARGE)
+    : 0;
 
   const subtotalBeforeGst =
     itemTotal + deliveryFee + platformFee + codCharge - discountAmount;
   
-  const gstPercent = campus?.gst_percentage ?? GST_PERCENT;
+  const gstPercent = isPreorder
+    ? (campus?.preorder_gst ?? GST_PERCENT)
+    : (campus?.regular_gst ?? GST_PERCENT);
+
   const gst = (subtotalBeforeGst * gstPercent) / 100;
   const grandTotal = subtotalBeforeGst + gst;
 

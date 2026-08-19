@@ -16,13 +16,15 @@ export interface Campus {
   is_active: boolean;
   preorder_open: boolean;
   preorder_opens_at: string | null;
-  preorder_closes_at: string | null;
-  delivery_active: boolean;
-  collection_room: string | null;
   whatsapp_number: string | null;
-  platform_fee: number;
-  cod_charge: number;
-  gst_percentage: number;
+  regular_delivery_fee: number;
+  regular_platform_fee: number;
+  regular_gst: number;
+  regular_cod_charge: number;
+  preorder_delivery_fee: number;
+  preorder_platform_fee: number;
+  preorder_gst: number;
+  preorder_cod_charge: number;
   created_at: string;
 }
 
