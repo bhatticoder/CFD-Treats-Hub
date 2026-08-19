@@ -98,6 +98,26 @@ export function OrderTracker({ initial }: { initial: Order }) {
         </Card>
       ) : (
         <>
+          {order.order_status !== "delivered" && !order.is_preorder && (
+            <div className="mb-4 rounded-xl border border-primary/20 bg-primary/10 p-4 text-center">
+              <h2 className="text-base font-extrabold text-primary">
+                Your Treats will be here in 5-30 mins depending on distance and traffic.
+              </h2>
+              <p className="text-xs font-medium text-primary/80 mt-1">
+                It may rarely exceed the time during very high traffic or rush at oven.
+              </p>
+            </div>
+          )}
+          {order.order_status !== "delivered" && order.is_preorder && (
+            <div className="mb-4 rounded-xl border border-primary/20 bg-primary/10 p-4 text-center">
+              <h2 className="text-base font-extrabold text-primary">
+                Your Pre-order is confirmed!
+              </h2>
+              <p className="text-xs font-medium text-primary/80 mt-1">
+                We will prepare it for the scheduled delivery time.
+              </p>
+            </div>
+          )}
           {order.room_number?.startsWith("Pickup: ") && (
             <div className="mb-4 rounded-xl border border-primary/20 bg-primary/10 p-4 text-primary">
               <p className="font-bold">Self-Pickup Required</p>
