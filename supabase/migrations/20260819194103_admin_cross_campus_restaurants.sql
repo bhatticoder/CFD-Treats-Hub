@@ -1,3 +1,17 @@
+-- Helper: get the current user's role
+create or replace function public.my_role()
+returns text language sql stable security definer
+as $$
+  select role from public.profiles where id = auth.uid();
+$$;
+
+-- Helper: get the current user's campus_id
+create or replace function public.my_campus_id()
+returns uuid language sql stable security definer
+as $$
+  select campus_id from public.profiles where id = auth.uid();
+$$;
+
 -- Drop existing policies
 drop policy if exists "Staff can view all restaurants for their campus" on public.restaurants;
 drop policy if exists "Admin can manage restaurants" on public.restaurants;
