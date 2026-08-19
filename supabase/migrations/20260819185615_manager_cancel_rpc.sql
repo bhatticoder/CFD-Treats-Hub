@@ -6,6 +6,8 @@ declare
   v_role text;
   v_campus_id uuid;
   v_order_campus uuid;
+  v_current_status text;
+  v_item record;
 begin
   -- Get user info
   select role, campus_id into v_role, v_campus_id
@@ -16,13 +18,24 @@ begin
     raise exception 'Unauthorized';
   end if;
 
-  -- Verify campus match
-  select campus_id into v_order_campus
+  -- Verify campus match and current status
+  select campus_id, order_status into v_order_campus, v_current_status
   from public.orders where id = p_order_id;
 
   if v_role = 'manager' and v_order_campus != v_campus_id then
     raise exception 'Cannot cancel orders for a different campus';
   end if;
+
+  if v_current_status = 'cancelled' then
+    raise exception 'Order is already cancelled';
+  end if;
+
+  -- Restore stock for non-preorder items
+  for v_item in select item_id, quantity from public.order_items where order_id = p_order_id loop
+    update public.items 
+    set stock_quantity = stock_quantity + v_item.quantity 
+    where id = v_item.item_id and is_preorder = false;
+  end loop;
 
   -- Perform the cancellation (this runs as postgres, bypassing triggers on 'manager' role)
   update public.orders
