@@ -419,7 +419,7 @@ export default function CartPage() {
       <Card className="mt-4">
         <CardBody className="space-y-2 text-sm">
           <Row label="Item total" value={money(totals.itemTotal)} />
-          <Row label="Delivery fee" value={money(totals.deliveryFee)} />
+          {totals.deliveryFee > 0 && <Row label="Delivery fee" value={money(totals.deliveryFee)} />}
           <Row label="Platform fee" value={money(totals.platformFee)} />
           {method === "cod" && <Row label="COD charges" value={money(totals.codCharge)} />}
           {totals.discountAmount > 0 && (

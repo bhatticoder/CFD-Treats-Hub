@@ -119,7 +119,7 @@ export function InventoryManager({
         description: draft.description.trim() || null,
         price: Number(draft.price) || 0,
         stock_quantity: Number(draft.stock_quantity) || 0,
-        delivery_fee: Number(draft.delivery_fee) || 0,
+        delivery_fee: draft.is_preorder ? (Number(draft.delivery_fee) || 0) : 0,
         category: draft.category,
         custom_instruction: draft.custom_instruction.trim() || null,
         is_available: draft.is_available,
@@ -326,10 +326,12 @@ export function InventoryManager({
               <Label>Price</Label>
               <Input inputMode="numeric" value={draft.price} onChange={(e) => setDraft({ ...draft, price: e.target.value })} />
             </div>
-            <div>
-              <Label>Delivery fee</Label>
-              <Input inputMode="numeric" value={draft.delivery_fee} onChange={(e) => setDraft({ ...draft, delivery_fee: e.target.value })} />
-            </div>
+            {draft.is_preorder && (
+              <div>
+                <Label>Delivery fee</Label>
+                <Input inputMode="numeric" value={draft.delivery_fee} onChange={(e) => setDraft({ ...draft, delivery_fee: e.target.value })} />
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-1">
             <div>
