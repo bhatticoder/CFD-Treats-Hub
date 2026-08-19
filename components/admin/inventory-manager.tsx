@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Minus, Pencil, Trash2, Eye, EyeOff, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -418,7 +418,9 @@ export function InventoryManager({
 
 /** Inline stock editor — update stock in one click, no dialog / no reupload. */
 function StockCell({ item }: { item: Item }) {
+  const router = useRouter();
   const [stock, setStock] = useState(item.stock_quantity);
+  const [savedStock, setSavedStock] = useState(item.stock_quantity);
   const [saving, setSaving] = useState(false);
 
   async function persist(v: number) {
@@ -427,9 +429,11 @@ function StockCell({ item }: { item: Item }) {
     setSaving(true);
     await createClient().from("items").update({ stock_quantity: nv }).eq("id", item.id);
     setSaving(false);
+    setSavedStock(nv);
+    router.refresh();
   }
 
-  const isDirty = stock !== item.stock_quantity;
+  const isDirty = stock !== savedStock;
 
   return (
     <div className="flex items-center gap-1">
