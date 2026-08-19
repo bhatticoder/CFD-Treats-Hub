@@ -332,11 +332,17 @@ export function InventoryManager({
           <div className="grid grid-cols-1">
             <div>
               <Label>Category</Label>
-              <Select value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })}>
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
+              <Input 
+                value={draft.category} 
+                onChange={(e) => setDraft({ ...draft, category: e.target.value })} 
+                list="category-suggestions"
+                placeholder="e.g. Snacks, or type a new category"
+              />
+              <datalist id="category-suggestions">
+                {Array.from(new Set([...CATEGORIES, ...items.map(i => i.category)])).sort().map((c) => (
+                  <option key={c} value={c} />
                 ))}
-              </Select>
+              </datalist>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
