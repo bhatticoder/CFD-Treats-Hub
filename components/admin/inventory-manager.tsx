@@ -19,6 +19,7 @@ type Draft = {
   description: string;
   price: string;
   stock_quantity: string;
+  delivery_fee: string;
   category: string;
   custom_instruction: string;
   is_available: boolean;
@@ -33,6 +34,7 @@ const empty: Draft = {
   description: "",
   price: "",
   stock_quantity: "",
+  delivery_fee: "",
   category: "Snacks",
   custom_instruction: "",
   is_available: true,
@@ -81,6 +83,7 @@ export function InventoryManager({
       description: item.description ?? "",
       price: String(item.price),
       stock_quantity: String(item.stock_quantity),
+      delivery_fee: String(item.delivery_fee),
       category: item.category,
       custom_instruction: item.custom_instruction ?? "",
       is_available: item.is_available,
@@ -116,6 +119,7 @@ export function InventoryManager({
         description: draft.description.trim() || null,
         price: Number(draft.price) || 0,
         stock_quantity: Number(draft.stock_quantity) || 0,
+        delivery_fee: Number(draft.delivery_fee) || 0,
         category: draft.category,
         custom_instruction: draft.custom_instruction.trim() || null,
         is_available: draft.is_available,
@@ -320,6 +324,10 @@ export function InventoryManager({
           <div>
             <Label>Price</Label>
             <Input inputMode="numeric" value={draft.price} onChange={(e) => setDraft({ ...draft, price: e.target.value })} />
+          </div>
+          <div>
+            <Label>Delivery Fee</Label>
+            <Input inputMode="numeric" value={draft.delivery_fee} onChange={(e) => setDraft({ ...draft, delivery_fee: e.target.value })} />
           </div>
           <div className="grid grid-cols-1">
             <div>

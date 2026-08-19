@@ -20,12 +20,10 @@ export function AdminCharges({ campuses }: { campuses: Campus[] }) {
   const campus = campuses.find((c) => c.id === selectedId);
 
   // States
-  const [regDel, setRegDel] = useState(String(campus?.regular_delivery_fee ?? 0));
   const [regPlat, setRegPlat] = useState(String(campus?.regular_platform_fee ?? 5));
   const [regGst, setRegGst] = useState(String(campus?.regular_gst ?? 5));
   const [regCod, setRegCod] = useState(String(campus?.regular_cod_charge ?? 30));
 
-  const [preDel, setPreDel] = useState(String(campus?.preorder_delivery_fee ?? 0));
   const [prePlat, setPrePlat] = useState(String(campus?.preorder_platform_fee ?? 5));
   const [preGst, setPreGst] = useState(String(campus?.preorder_gst ?? 5));
   const [preCod, setPreCod] = useState(String(campus?.preorder_cod_charge ?? 30));
@@ -34,12 +32,10 @@ export function AdminCharges({ campuses }: { campuses: Campus[] }) {
     setSelectedId(id);
     const c = campuses.find((x) => x.id === id);
     if (c) {
-      setRegDel(String(c.regular_delivery_fee ?? 0));
       setRegPlat(String(c.regular_platform_fee ?? 5));
       setRegGst(String(c.regular_gst ?? 5));
       setRegCod(String(c.regular_cod_charge ?? 30));
 
-      setPreDel(String(c.preorder_delivery_fee ?? 0));
       setPrePlat(String(c.preorder_platform_fee ?? 5));
       setPreGst(String(c.preorder_gst ?? 5));
       setPreCod(String(c.preorder_cod_charge ?? 30));
@@ -55,11 +51,9 @@ export function AdminCharges({ campuses }: { campuses: Campus[] }) {
     setSuccess(null);
     try {
       const payload = {
-        regular_delivery_fee: Number(regDel) || 0,
         regular_platform_fee: Number(regPlat) || 0,
         regular_gst: Number(regGst) || 0,
         regular_cod_charge: Number(regCod) || 0,
-        preorder_delivery_fee: Number(preDel) || 0,
         preorder_platform_fee: Number(prePlat) || 0,
         preorder_gst: Number(preGst) || 0,
         preorder_cod_charge: Number(preCod) || 0,
@@ -117,10 +111,6 @@ export function AdminCharges({ campuses }: { campuses: Campus[] }) {
             <p className="text-xs text-text-muted">These flat charges apply to standard inventory orders.</p>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Delivery Fee (Flat)</Label>
-                <Input inputMode="numeric" value={regDel} onChange={(e) => setRegDel(e.target.value.replace(/\D/g, ""))} />
-              </div>
-              <div>
                 <Label>Platform Fee (Flat)</Label>
                 <Input inputMode="numeric" value={regPlat} onChange={(e) => setRegPlat(e.target.value.replace(/\D/g, ""))} />
               </div>
@@ -141,10 +131,6 @@ export function AdminCharges({ campuses }: { campuses: Campus[] }) {
             <h2 className="text-lg font-bold text-text">Pre-orders</h2>
             <p className="text-xs text-text-muted">These flat charges apply only to pre-orders.</p>
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Delivery Fee (Flat)</Label>
-                <Input inputMode="numeric" value={preDel} onChange={(e) => setPreDel(e.target.value.replace(/\D/g, ""))} />
-              </div>
               <div>
                 <Label>Platform Fee (Flat)</Label>
                 <Input inputMode="numeric" value={prePlat} onChange={(e) => setPrePlat(e.target.value.replace(/\D/g, ""))} />

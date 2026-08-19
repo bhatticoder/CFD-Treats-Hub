@@ -117,9 +117,7 @@ export default function CartPage() {
   const isPreorder = lines.some(l => l.item.is_preorder);
   let discountAmount = 0;
   if (appliedVoucher) {
-    const deliveryFee = isPreorder
-      ? (campus?.preorder_delivery_fee ?? 0)
-      : (campus?.regular_delivery_fee ?? 0);
+    const deliveryFee = lines.reduce((sum, l) => sum + (l.item.delivery_fee || 0) * l.quantity, 0);
     const platformFee = isPreorder
       ? (campus?.preorder_platform_fee ?? PLATFORM_FEE)
       : (campus?.regular_platform_fee ?? PLATFORM_FEE);
@@ -154,9 +152,7 @@ export default function CartPage() {
       setAppliedVoucher(null);
       return;
     }
-    const deliveryFee = isPreorder
-      ? (campus?.preorder_delivery_fee ?? 0)
-      : (campus?.regular_delivery_fee ?? 0);
+    const deliveryFee = lines.reduce((sum, l) => sum + (l.item.delivery_fee || 0) * l.quantity, 0);
     const platformFee = isPreorder
       ? (campus?.preorder_platform_fee ?? PLATFORM_FEE)
       : (campus?.regular_platform_fee ?? PLATFORM_FEE);

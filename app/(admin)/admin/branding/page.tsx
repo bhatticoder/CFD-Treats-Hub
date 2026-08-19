@@ -6,10 +6,10 @@ import type { Campus } from "@/lib/types/models";
 export default async function BrandingPage() {
   const profile = await myProfile();
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("campuses")
-    .select("*")
-    .eq("id", profile?.campus_id ?? "")
-    .maybeSingle();
-  return <Branding campus={data as Campus} />;
+  let query = supabase.from("campuses").select("*");
+  if (profile?.role !== "admin") {
+    query = query.eq("id", profile?.campus_id ?? "");
+  }
+  const { data } = await query;
+  return <Branding campuses={data as Campus[]} />;
 }

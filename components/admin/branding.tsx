@@ -6,16 +6,17 @@ import { createClient } from "@/lib/supabase/client";
 import { PageContainer } from "@/components/app-shell";
 import { Card, CardBody } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input, Label } from "@/components/ui/input";
+import { Input, Label, Select } from "@/components/ui/input";
 import type { Campus } from "@/lib/types/models";
 
-export function Branding({ campus }: { campus: Campus }) {
+export function Branding({ campuses }: { campuses: Campus[] }) {
   const router = useRouter();
+  const [selectedId, setSelectedId] = useState<string>(campuses[0]?.id ?? "");
+  const campus = campuses.find(c => c.id === selectedId);
+
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(campus?.logo_url ?? null);
   const [color, setColor] = useState(campus?.theme_color ?? "");
-  const [account, setAccount] = useState(campus?.payment_account_info ?? "");
-  const [codCap, setCodCap] = useState(String(campus?.cod_cap_percent ?? 100));
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -26,8 +27,6 @@ export function Branding({ campus }: { campus: Campus }) {
     try {
       const payload: Record<string, unknown> = {
         theme_color: color.trim() || null,
-        payment_account_info: account.trim() || null,
-        cod_cap_percent: Math.min(100, Math.max(0, Number(codCap) || 100)),
       };
       if (file) {
         const path = `logos/${crypto.randomUUID()}.png`;
@@ -37,7 +36,7 @@ export function Branding({ campus }: { campus: Campus }) {
         if (upErr) throw new Error(upErr.message ?? String(upErr));
         payload.logo_url = supabase.storage.from("item-images").getPublicUrl(path).data.publicUrl;
       }
-      const { error } = await supabase.from("campuses").update(payload).eq("id", campus.id);
+      const { error } = await supabase.from("campuses").update(payload).eq("id", selectedId);
       if (error) throw new Error(error.message ?? String(error));
       setMsg("Saved");
       router.refresh();
@@ -56,10 +55,36 @@ export function Branding({ campus }: { campus: Campus }) {
     }
   }
 
+  if (!campus) return <PageContainer><p>No campus found.</p></PageContainer>;
+
   return (
     <PageContainer max="max-w-xl">
       <h1 className="mb-1 text-2xl font-extrabold text-text">Branding</h1>
-      <p className="mb-5 text-sm text-text-muted">{campus?.name}</p>
+      <p className="mb-5 text-sm text-text-muted">Customize your app appearance.</p>
+
+      {campuses.length > 1 && (
+        <div className="mb-6">
+          <Label>Select Campus</Label>
+          <Select 
+            value={selectedId} 
+            onChange={(e) => {
+              const id = e.target.value;
+              setSelectedId(id);
+              const c = campuses.find(x => x.id === id);
+              if (c) {
+                setPreview(c.logo_url ?? null);
+                setColor(c.theme_color ?? "");
+                setFile(null);
+              }
+            }} 
+            className="w-full sm:w-72"
+          >
+            {campuses.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </Select>
+        </div>
+      )}
 
       <Card>
         <CardBody className="space-y-5">
@@ -87,22 +112,6 @@ export function Branding({ campus }: { campus: Campus }) {
           <div>
             <Label>Theme colour (hex)</Label>
             <Input value={color} onChange={(e) => setColor(e.target.value)} placeholder="#5FA80B" />
-          </div>
-          <div>
-            <Label>Payment account (shown to customers at checkout)</Label>
-            <Input
-              value={account}
-              onChange={(e) => setAccount(e.target.value)}
-              placeholder="JazzCash 0300-1234567 (Muhammad Asaad)"
-            />
-          </div>
-          <div>
-            <Label>COD cap (% of nightly orders)</Label>
-            <Input
-              inputMode="numeric"
-              value={codCap}
-              onChange={(e) => setCodCap(e.target.value.replace(/\D/g, ""))}
-            />
           </div>
           {msg && <p className="text-sm text-text-muted">{msg}</p>}
           <Button className="w-full" loading={busy} onClick={save}>Save branding</Button>

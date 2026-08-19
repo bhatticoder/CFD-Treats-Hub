@@ -27,9 +27,10 @@ export function computeTotals(
   );
   const isPreorder = lines.some(l => l.item.is_preorder);
 
-  const deliveryFee = isPreorder
-    ? (campus?.preorder_delivery_fee ?? 0)
-    : (campus?.regular_delivery_fee ?? 0);
+  const deliveryFee = lines.reduce(
+    (sum, l) => sum + (l.item.delivery_fee || 0) * l.quantity,
+    0,
+  );
 
   const platformFee = isPreorder
     ? (campus?.preorder_platform_fee ?? PLATFORM_FEE)

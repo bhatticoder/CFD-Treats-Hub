@@ -35,6 +35,7 @@ const items: NavItem[] = [
   { href: "/admin/reports", label: "Reports", icon: BarChart3 },
   { href: "/admin/users", label: "Users", icon: GraduationCap },
   { href: "/admin/audit", label: "Audit Log", icon: ScrollText },
+  { href: "/admin/contact", label: "Payment & Contact", icon: ReceiptText },
   { href: "/admin/branding", label: "Branding", icon: Palette },
 ];
 
