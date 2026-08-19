@@ -317,10 +317,9 @@ export function InventoryManager({
             <Label>Description</Label>
             <Input value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
           </div>
-            <div>
-              <Label>Price</Label>
-              <Input inputMode="numeric" value={draft.price} onChange={(e) => setDraft({ ...draft, price: e.target.value })} />
-            </div>
+          <div>
+            <Label>Price</Label>
+            <Input inputMode="numeric" value={draft.price} onChange={(e) => setDraft({ ...draft, price: e.target.value })} />
           </div>
           <div className="grid grid-cols-1">
             <div>
