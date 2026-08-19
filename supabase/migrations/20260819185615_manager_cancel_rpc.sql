@@ -18,9 +18,9 @@ begin
     raise exception 'Unauthorized';
   end if;
 
-  -- Verify campus match and current status
+  -- Verify campus match and current status (with row lock to prevent race conditions)
   select campus_id, order_status into v_order_campus, v_current_status
-  from public.orders where id = p_order_id;
+  from public.orders where id = p_order_id for update;
 
   if v_role = 'manager' and v_order_campus != v_campus_id then
     raise exception 'Cannot cancel orders for a different campus';
