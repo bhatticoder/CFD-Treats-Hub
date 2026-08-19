@@ -68,6 +68,23 @@ export function InventoryManager({
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const shownItems = useMemo(() => {
+    return items.filter((i) => {
+      const tabMatch = tab === "all" ? true : tab === "preorder" ? i.is_preorder : !i.is_preorder;
+      const campusMatch = filterCampus === "all" ? true : i.campus_id === filterCampus;
+      return tabMatch && campusMatch;
+    });
+  }, [items, tab, filterCampus]);
+
+  async function setBulkVisibility(isAvailable: boolean) {
+    if (shownItems.length === 0) return;
+    setBusy(true);
+    const ids = shownItems.map(i => i.id);
+    await createClient().from("items").update({ is_available: isAvailable }).in("id", ids);
+    setBusy(false);
+    router.refresh();
+  }
+
   function openNew() {
     setEditing(null);
     setDraft(empty);
@@ -183,11 +200,19 @@ export function InventoryManager({
 
   return (
     <PageContainer>
-      <div className="mb-5 flex items-center justify-between">
+      <div className="mb-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <h1 className="text-2xl font-extrabold text-text">Inventory</h1>
-        <Button onClick={openNew}>
-          <Plus className="h-4 w-4" /> Add item
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto justify-end">
+          <Button variant="outline" onClick={() => setBulkVisibility(true)} disabled={busy || shownItems.length === 0}>
+            <Eye className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Unhide All</span>
+          </Button>
+          <Button variant="outline" onClick={() => setBulkVisibility(false)} disabled={busy || shownItems.length === 0}>
+            <EyeOff className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Hide All</span>
+          </Button>
+          <Button onClick={openNew}>
+            <Plus className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Add item</span>
+          </Button>
+        </div>
       </div>
 
       <div className="mb-4 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
@@ -228,12 +253,7 @@ export function InventoryManager({
       )}
 
       {(() => {
-        const shown = items.filter((i) => {
-          const tabMatch = tab === "all" ? true : tab === "preorder" ? i.is_preorder : !i.is_preorder;
-          const campusMatch = filterCampus === "all" ? true : i.campus_id === filterCampus;
-          return tabMatch && campusMatch;
-        });
-        return shown.length === 0 ? (
+        return shownItems.length === 0 ? (
           <p className="py-16 text-center text-text-faint">
             {tab === "preorder"
               ? "No pre-order items yet. Add an item and toggle “Pre-order item” on."
@@ -241,7 +261,7 @@ export function InventoryManager({
           </p>
         ) : (
           <div className="space-y-3">
-            {shown.map((item) => (
+            {shownItems.map((item) => (
             <Card key={item.id}>
               <CardBody className="flex items-center gap-3 p-4">
                 <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-bg-muted text-xl">
