@@ -16,7 +16,10 @@ export interface Campus {
   is_active: boolean;
   preorder_open: boolean;
   preorder_opens_at: string | null;
+  preorder_closes_at: string | null;
   whatsapp_number: string | null;
+  delivery_active: boolean;
+  collection_room: string | null;
   regular_delivery_fee: number;
   regular_platform_fee: number;
   regular_gst: number;
