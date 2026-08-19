@@ -32,6 +32,6 @@ begin
 
   -- Add audit log
   insert into public.audit_log (actor_id, actor_role, action, entity, entity_id, campus_id, detail)
-  values (auth.uid(), v_role, 'cancel_order', 'order', p_order_id::text, v_campus_id, jsonb_build_object('reason', p_reason));
+  values (auth.uid(), v_role::public.user_role, 'cancel_order', 'order', p_order_id::text, v_campus_id, jsonb_build_object('reason', p_reason));
 end;
 $$;
