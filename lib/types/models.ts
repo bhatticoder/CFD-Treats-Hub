@@ -138,6 +138,13 @@ export interface AppNotification {
   created_at: string;
 }
 
+export interface ItemCategory {
+  id: string;
+  campus_id: string;
+  name: string;
+  created_at: string;
+}
+
 export interface AuditEntry {
   id: number;
   actor_id: string | null;

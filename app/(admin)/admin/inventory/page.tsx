@@ -20,11 +20,17 @@ export default async function InventoryPage() {
     .select("*")
     .order("name");
     
+  const { data: categories } = await supabase
+    .from("item_categories")
+    .select("*")
+    .order("name");
+    
   return (
     <InventoryManager
       items={(items as Item[]) ?? []}
       restaurants={(restaurants as Restaurant[]) ?? []}
       campuses={(campuses as Campus[]) ?? []}
+      categories={(categories as any[]) ?? []}
     />
   );
 }

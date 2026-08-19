@@ -25,6 +25,7 @@ const items: NavItem[] = [
   { href: "/admin/shift", label: "Shift Control", icon: Power },
   { href: "/admin/preorders", label: "Pre-orders", icon: ClipboardList },
   { href: "/admin/restaurants", label: "Restaurants", icon: Store },
+  { href: "/admin/categories", label: "Categories", icon: Tag },
   { href: "/admin/inventory", label: "Inventory", icon: Package },
   { href: "/admin/orders", label: "Orders", icon: ReceiptText },
   { href: "/admin/managers", label: "Managers", icon: Users },

@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Switch, Badge } from "@/components/ui/misc";
 import { Modal } from "@/components/ui/modal";
-import type { Item, Restaurant } from "@/lib/types/models";
+import type { Item, Restaurant, ItemCategory } from "@/lib/types/models";
 
 type Draft = {
   name: string;
@@ -48,10 +48,12 @@ export function InventoryManager({
   items,
   restaurants,
   campuses,
+  categories,
 }: {
   items: Item[];
   restaurants: Restaurant[];
   campuses: import("@/lib/types/models").Campus[];
+  categories: ItemCategory[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -352,17 +354,12 @@ export function InventoryManager({
           <div className="grid grid-cols-1">
             <div>
               <Label>Category</Label>
-              <Input 
-                value={draft.category} 
-                onChange={(e) => setDraft({ ...draft, category: e.target.value })} 
-                list="category-suggestions"
-                placeholder="e.g. Snacks, or type a new category"
-              />
-              <datalist id="category-suggestions">
-                {Array.from(new Set([...CATEGORIES, ...items.map(i => i.category)])).sort().map((c) => (
-                  <option key={c} value={c} />
+              <Select value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })}>
+                <option value="">-- Select a Category --</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.name}>{c.name}</option>
                 ))}
-              </datalist>
+              </Select>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
