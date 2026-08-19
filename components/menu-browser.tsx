@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Moon, Plus, Minus, Check, CalendarClock, Store, X, ShoppingCart, ArrowRight, Sparkles } from "lucide-react";
-import { CATEGORIES } from "@/lib/domain/constants";
 import { money, cn } from "@/lib/utils";
 import { useCart } from "@/lib/store/cart";
 import { PageContainer } from "@/components/app-shell";
@@ -41,12 +40,23 @@ export function MenuBrowser({
     return ["All", ...Array.from(set).sort()];
   }, [items]);
 
+  // Distinct categories present in this campus's items.
+  const dynamicCategories = useMemo(() => {
+    const set = new Set<string>();
+    items.forEach((i) => {
+      if (i.category) {
+        i.category.split(',').forEach(c => set.add(c.trim()));
+      }
+    });
+    return ["All", ...Array.from(set).filter(Boolean).sort()];
+  }, [items]);
+
   // Category and restaurant filters combine (both can be active at once).
   const visible = useMemo(
     () =>
       items.filter(
         (i) =>
-          (category === "All" || i.category === category) &&
+          (category === "All" || (i.category && i.category.split(',').map(c => c.trim()).includes(category))) &&
           (restaurant === "All" || i.restaurants?.name === restaurant),
       ),
     [items, category, restaurant],
@@ -137,7 +147,7 @@ export function MenuBrowser({
 
       {/* Category tabs */}
       <div className="mb-3 flex flex-wrap gap-2">
-        {CATEGORIES.map((c) => (
+        {dynamicCategories.map((c) => (
           <button
             key={c}
             onClick={() => setCategory(c)}

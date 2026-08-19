@@ -354,12 +354,29 @@ export function InventoryManager({
           <div className="grid grid-cols-1">
             <div>
               <Label>Category</Label>
-              <Select value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })}>
-                <option value="">-- Select a Category --</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.name}>{c.name}</option>
-                ))}
-              </Select>
+              <div className="flex flex-col gap-2 mt-2">
+                {categories.map((c) => {
+                  const selectedCats = draft.category.split(',').map(x => x.trim()).filter(Boolean);
+                  const isChecked = selectedCats.includes(c.name);
+                  return (
+                    <label key={c.id} className="flex items-center gap-2 cursor-pointer text-sm text-text">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setDraft({ ...draft, category: [...selectedCats, c.name].join(', ') });
+                          } else {
+                            setDraft({ ...draft, category: selectedCats.filter(x => x !== c.name).join(', ') });
+                          }
+                        }}
+                        className="rounded border-accent-warm text-primary focus:ring-primary"
+                      />
+                      {c.name}
+                    </label>
+                  );
+                })}
+              </div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
