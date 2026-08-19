@@ -2,14 +2,6 @@ import webpush from "web-push";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
-// Only configure if keys are present (to avoid crashing on build or setups without push)
-if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
-  webpush.setVapidDetails(
-    "mailto:admin@cfdtreats.com", 
-    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-  );
-}
 
 export async function POST(req: Request) {
   try {
@@ -76,7 +68,13 @@ export async function POST(req: Request) {
             p256dh: sub.p256dh,
             auth: sub.auth,
           }
-        }, payload);
+        }, payload, {
+          vapidDetails: {
+            subject: "mailto:admin@cfdtreats.com",
+            publicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY as string,
+            privateKey: process.env.VAPID_PRIVATE_KEY as string,
+          }
+        });
         successCount++;
       } catch (err: any) {
         console.error("Error sending push to", sub.endpoint, err);
