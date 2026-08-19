@@ -10,7 +10,7 @@ import { computeTotals, effectivePrice } from "@/lib/domain/pricing";
 import { HOSTEL_BLOCKS, COD_EXTRA_CHARGE, PLATFORM_FEE } from "@/lib/domain/constants";
 import { validateRoom } from "@/lib/domain/validators";
 import { money, cn } from "@/lib/utils";
-import type { Voucher } from "@/lib/types/models";
+import type { Voucher, Campus } from "@/lib/types/models";
 import { PageContainer } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
