@@ -59,6 +59,7 @@ export function InventoryManager({
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"all" | "menu" | "preorder">("all");
   const [filterCampus, setFilterCampus] = useState<string>("all");
+  const [filterRestaurant, setFilterRestaurant] = useState<string>("all");
   const [editing, setEditing] = useState<Item | null>(null);
   const [draft, setDraft] = useState<Draft>(empty);
   const [file, setFile] = useState<File | null>(null);
@@ -74,9 +75,14 @@ export function InventoryManager({
     return items.filter((i) => {
       const tabMatch = tab === "all" ? true : tab === "preorder" ? i.is_preorder : !i.is_preorder;
       const campusMatch = filterCampus === "all" ? true : i.campus_id === filterCampus;
-      return tabMatch && campusMatch;
+      const restaurantMatch = filterRestaurant === "all" 
+        ? true 
+        : filterRestaurant === "in-house" 
+          ? !i.restaurant_id 
+          : i.restaurant_id === filterRestaurant;
+      return tabMatch && campusMatch && restaurantMatch;
     });
-  }, [items, tab, filterCampus]);
+  }, [items, tab, filterCampus, filterRestaurant]);
 
   async function setBulkVisibility(isAvailable: boolean) {
     if (shownItems.length === 0) return;
@@ -238,7 +244,7 @@ export function InventoryManager({
             </button>
           ))}
         </div>
-        <div className="w-full sm:w-auto">
+        <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2">
           <Select 
             value={filterCampus} 
             onChange={(e) => setFilterCampus(e.target.value)}
@@ -246,6 +252,23 @@ export function InventoryManager({
           >
             <option value="all">All Campuses</option>
             {campuses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </Select>
+
+          <Select 
+            value={filterRestaurant} 
+            onChange={(e) => setFilterRestaurant(e.target.value)}
+            className="w-full sm:w-48 bg-surface border-border text-sm"
+          >
+            <option value="all">All Restaurants</option>
+            <option value="in-house">None (In-house)</option>
+            {restaurants
+              .filter(r => filterCampus === "all" || r.campus_id === filterCampus)
+              .map(r => (
+                <option key={r.id} value={r.id}>
+                  {r.name} {filterCampus === "all" ? `(${campuses.find(c => c.id === r.campus_id)?.name})` : ""}
+                </option>
+              ))
+            }
           </Select>
         </div>
       </div>
@@ -407,7 +430,9 @@ export function InventoryManager({
               <Select value={draft.restaurant_id} onChange={(e) => setDraft({ ...draft, restaurant_id: e.target.value })}>
                 <option value="">None (In-house)</option>
                 {restaurants.filter(r => draft.campus_ids.includes(r.campus_id) || draft.campus_ids.length === 0).map((r) => (
-                  <option key={r.id} value={r.id}>{r.name}</option>
+                  <option key={r.id} value={r.id}>
+                    {r.name} {draft.campus_ids.length !== 1 ? `(${campuses.find(c => c.id === r.campus_id)?.name})` : ""}
+                  </option>
                 ))}
               </Select>
             </div>
