@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Building2, Trash2, Pencil, CalendarClock, Truck, ChevronRight } from "lucide-react";
+import { Plus, Building2, Trash2, Pencil, CalendarClock, Truck, ChevronRight, Minus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { GENDERS, DEFAULT_DOMAIN_SUFFIX } from "@/lib/domain/constants";
 import { PageContainer } from "@/components/app-shell";
@@ -20,7 +20,7 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
   const [name, setName] = useState("");
   const [domain, setDomain] = useState(DEFAULT_DOMAIN_SUFFIX);
   const [gender, setGender] = useState<string>("Male");
-  const [halls, setHalls] = useState("");
+  const [halls, setHalls] = useState<string[]>([]);
   const [codCap, setCodCap] = useState("100");
   const [deliveryActive, setDeliveryActive] = useState(true);
   const [collectionRoom, setCollectionRoom] = useState("");
@@ -73,7 +73,7 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
     setName("");
     setDomain(DEFAULT_DOMAIN_SUFFIX);
     setGender("Male");
-    setHalls("");
+    setHalls([]);
     setCodCap("100");
     setDeliveryActive(true);
     setCollectionRoom("");
@@ -86,7 +86,7 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
     setName(c.name);
     setDomain(c.domain_suffix || DEFAULT_DOMAIN_SUFFIX);
     setGender(c.gender || "Male");
-    setHalls(c.halls ? c.halls.join(", ") : "");
+    setHalls(c.halls ? [...c.halls] : []);
     setCodCap(String(c.cod_cap_percent ?? 100));
     setDeliveryActive(c.delivery_active ?? true);
     setCollectionRoom(c.collection_room || "");
@@ -103,7 +103,7 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
       name: name.trim(),
       domain_suffix: domain.trim().toLowerCase(),
       gender: gender as "Male" | "Female",
-      halls: halls.split(",").map(h => h.trim()).filter(h => h.length > 0),
+      halls: halls.map(h => h.trim()).filter(h => h.length > 0),
       cod_cap_percent: Number(codCap) || 100,
       delivery_active: deliveryActive,
       collection_room: !deliveryActive ? collectionRoom.trim() : null,
@@ -228,7 +228,8 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-text">{c.name}</p>
                   <p className="text-sm text-text-muted">
-                    {c.domain_suffix} · {c.gender} · COD cap {c.cod_cap_percent}% · Delivery {c.delivery_active ? "ON" : "OFF"}
+                    {c.domain_suffix} · {c.gender || "Any"} · COD cap {c.cod_cap_percent}% · Delivery {c.delivery_active ? "ON" : "OFF"}
+                    {(c.halls && c.halls.length > 0) ? ` · Halls: ${c.halls.join(", ")}` : ""}
                   </p>
                 </div>
                 <Badge tone={c.shift_active ? "success" : "warn"}>
@@ -327,8 +328,31 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
           </div>
           <div>
             <Label>Halls / Blocks</Label>
-            <Input value={halls} onChange={(e) => setHalls(e.target.value)} placeholder="e.g. Iqbal, Jinnah" />
-            <p className="mt-1 text-xs text-text-muted">Comma-separated list of blocks or halls</p>
+            <div className="space-y-2 mt-1">
+              {halls.map((hall, idx) => (
+                <div key={idx} className="flex gap-2">
+                  <Input 
+                    value={hall} 
+                    onChange={(e) => {
+                      const newHalls = [...halls];
+                      newHalls[idx] = e.target.value;
+                      setHalls(newHalls);
+                    }} 
+                    placeholder={`Hall ${idx + 1}`} 
+                  />
+                  <Button variant="outline" size="icon" className="shrink-0" onClick={() => {
+                    const newHalls = [...halls];
+                    newHalls.splice(idx, 1);
+                    setHalls(newHalls);
+                  }}>
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button type="button" variant="outline" size="sm" className="w-full flex items-center gap-1 border-dashed" onClick={() => setHalls([...halls, ""])}>
+                <Plus className="h-4 w-4" /> Add Hall
+              </Button>
+            </div>
           </div>
           <div className="flex items-center justify-between rounded-xl border border-border bg-bg-muted p-3">
             <div>
