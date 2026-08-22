@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
@@ -39,6 +40,12 @@ export default function RegisterPage() {
   }, [router]);
 
   // Allow user to see all campuses. Validation handles domains.
+
+  async function handleBack() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.replace("/login");
+  }
 
   async function submit() {
     setError(null);
@@ -98,8 +105,19 @@ export default function RegisterPage() {
   return (
     <Card>
       <CardBody className="p-7">
-        <h1 className="text-xl font-extrabold text-text">Complete your profile</h1>
-        <p className="mb-4 text-sm text-text-muted">{email}</p>
+        <div className="flex items-start gap-3 mb-4">
+          <button 
+            onClick={handleBack} 
+            className="p-1 mt-0.5 -ml-2 hover:bg-bg-muted rounded-full transition-colors text-text-muted hover:text-text shrink-0"
+            title="Go back / Change email"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-xl font-extrabold text-text leading-tight">Complete your profile</h1>
+            <p className="text-sm text-text-muted mt-0.5">{email}</p>
+          </div>
+        </div>
 
         <div className="space-y-3">
           <div>
