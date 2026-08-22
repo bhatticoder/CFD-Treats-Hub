@@ -21,6 +21,9 @@ export function AdminPreorders({
 }) {
   const [view, setView] = useState<View>("time");
   const [campusFilter, setCampusFilter] = useState<string>("all");
+  const [controlCampusId, setControlCampusId] = useState<string>(campuses[0]?.id || "");
+
+  const controlCampus = campuses.find(c => c.id === controlCampusId) || campuses[0];
 
   const filtered = useMemo(
     () =>
@@ -64,14 +67,28 @@ export function AdminPreorders({
 
       {/* Per-campus open/close controls */}
       <div className="mb-6 space-y-4">
-        {campuses.map((c) => (
-          <div key={c.id}>
-            <p className="mb-2 flex items-center gap-2 text-sm font-bold text-text">
-              <Building2 className="h-4 w-4 text-primary" /> {c.name}
-            </p>
-            <PreorderControl campus={c} />
+        {campuses.length > 1 && (
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-bold text-text">Select Campus:</span>
+            <Select
+              className="w-full max-w-xs"
+              value={controlCampusId}
+              onChange={(e) => setControlCampusId(e.target.value)}
+            >
+              {campuses.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </Select>
           </div>
-        ))}
+        )}
+        {controlCampus && (
+          <div key={controlCampus.id}>
+            <p className="mb-2 flex items-center gap-2 text-sm font-bold text-text">
+              <Building2 className="h-4 w-4 text-primary" /> {controlCampus.name}
+            </p>
+            <PreorderControl campus={controlCampus} />
+          </div>
+        )}
       </div>
 
       {/* Filters */}
