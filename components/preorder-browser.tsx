@@ -306,9 +306,9 @@ export function PreorderBrowser({
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold text-text">{it.name}</p>
                     <p className="text-sm font-bold text-primary">{money(it.discounted_price ?? it.price)}</p>
-                    {it.expected_arrival && (
-                      <p className="text-xs text-text-faint">ETA {it.expected_arrival}</p>
-                    )}
+                    <p className="text-[11px] leading-tight text-text-faint/90 mt-1 pr-2">
+                      Your Treats will be delivered on the time mentioned in official group, usually around 8-8:30 pm.
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button onClick={() => bump(it.id, -1)} className="grid h-8 w-8 place-items-center rounded-full border border-border text-primary">

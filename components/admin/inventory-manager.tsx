@@ -519,16 +519,6 @@ export function InventoryManager({
               )}
             </div>
           </div>
-          <div className="grid grid-cols-1">
-            <div>
-              <Label>Expected arrival (optional)</Label>
-              <Input
-                placeholder="e.g. 9:30 PM"
-                value={draft.expected_arrival}
-                onChange={(e) => setDraft({ ...draft, expected_arrival: e.target.value })}
-              />
-            </div>
-          </div>
           <div>
             <Label>Custom instruction (for rider)</Label>
             <Textarea

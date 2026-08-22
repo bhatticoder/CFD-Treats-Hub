@@ -320,8 +320,10 @@ function ItemCard({
             </span>
           )}
         </div>
-        {item.expected_arrival && (
-          <p className="mt-0.5 text-xs text-text-faint">🕒 ETA {item.expected_arrival}</p>
+        {item.is_preorder && (
+          <p className="mt-1 text-[10px] leading-tight text-text-faint/90">
+            Delivery time mentioned in official group (usually 8-8:30 pm)
+          </p>
         )}
 
         {/* Button area */}
@@ -479,8 +481,10 @@ function ItemDetailModal({
             )}
           </div>
 
-          {item.expected_arrival && (
-            <p className="mt-1 text-sm text-text-faint">🕒 ETA {item.expected_arrival}</p>
+          {item.is_preorder && (
+            <p className="mt-1.5 text-xs leading-tight text-text-faint/90">
+              Your Treats will be delivered on the time mentioned in official group, usually around 8-8:30 pm.
+            </p>
           )}
 
           {/* Add / Qty controls */}

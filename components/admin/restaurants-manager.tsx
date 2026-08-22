@@ -62,10 +62,10 @@ export function RestaurantsManager({
 
       <Card className="mb-5">
         <CardBody>
-          <div className="flex gap-2">
-            <Input placeholder="Restaurant name" value={name} onChange={(e) => setName(e.target.value)} />
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Input className="w-full sm:flex-1" placeholder="Restaurant name" value={name} onChange={(e) => setName(e.target.value)} />
             <select
-              className="h-11 rounded-xl border border-border bg-surface px-4 text-sm focus:border-primary focus:outline-none"
+              className="h-11 w-full sm:w-auto rounded-xl border border-border bg-surface px-4 text-sm focus:border-primary focus:outline-none"
               value={campusId}
               onChange={(e) => setCampusId(e.target.value)}
             >
@@ -74,7 +74,7 @@ export function RestaurantsManager({
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
-            <Button loading={busy} onClick={add}>
+            <Button className="w-full sm:w-auto justify-center" loading={busy} onClick={add}>
               <Plus className="h-4 w-4" /> Add
             </Button>
           </div>
