@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,7 +68,14 @@ function VerifyInner() {
 
   return (
     <Card>
-      <CardBody className="p-7 text-center">
+      <CardBody className="p-7 text-center relative">
+        <button 
+          onClick={() => router.replace("/login")}
+          className="absolute left-3 top-3 p-2 hover:bg-bg-muted rounded-full transition-colors text-text-muted hover:text-text"
+          title="Go back / Change email"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
         <div className="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-2xl bg-primary-soft text-3xl">
           ✉️
         </div>
