@@ -23,6 +23,7 @@ export function RestaurantsManager({
   const [campusId, setCampusId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function add() {
     if (!name.trim()) return setError("Name is required");
@@ -44,12 +45,15 @@ export function RestaurantsManager({
   }
   
   async function remove(id: string) {
-    if (!confirm("Are you sure you want to delete this restaurant? Items assigned to it will become unassigned.")) return;
+    setBusy(true);
     await createClient().from("restaurants").delete().eq("id", id);
+    setDeletingId(null);
+    setBusy(false);
     router.refresh();
   }
 
   return (
+    <>
     <PageContainer max="max-w-2xl">
       <h1 className="mb-1 text-2xl font-extrabold text-text">Restaurants</h1>
       <p className="mb-5 text-sm text-text-muted">
@@ -97,7 +101,7 @@ export function RestaurantsManager({
                 </Badge>
                 <Switch checked={r.is_active} onChange={() => toggle(r)} />
                 <button
-                  onClick={() => remove(r.id)}
+                  onClick={() => setDeletingId(r.id)}
                   className="ml-2 grid h-8 w-8 place-items-center rounded-xl bg-error/10 text-error hover:bg-error/20"
                 >
                   <Trash className="h-4 w-4" />
@@ -108,5 +112,25 @@ export function RestaurantsManager({
         </div>
       )}
     </PageContainer>
+    
+    {deletingId && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+        <div className="w-full max-w-sm rounded-2xl bg-surface p-6 shadow-2xl">
+          <h3 className="mb-2 text-lg font-bold text-text">Delete Restaurant?</h3>
+          <p className="mb-6 text-sm text-text-muted">
+            Are you sure you want to delete this restaurant? Items assigned to it will become unassigned.
+          </p>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" disabled={busy} onClick={() => setDeletingId(null)}>
+              Cancel
+            </Button>
+            <Button variant="danger" loading={busy} onClick={() => remove(deletingId)}>
+              Delete
+            </Button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
