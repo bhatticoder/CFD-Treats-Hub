@@ -29,34 +29,25 @@ export default async function MenuPage() {
 
   const preordersOpen = isPreorderOpen(campus);
 
-  // Fetch IDs of active (non-hidden) restaurants for this campus.
-  const { data: activeRestaurants } = await supabase
-    .from("restaurants")
-    .select("id")
-    .eq("campus_id", campusId ?? "")
-    .eq("is_active", true);
-  const activeRestIds = new Set((activeRestaurants ?? []).map((r) => r.id));
-
   const { data: rawItems } = await supabase
     .from("items")
-    .select("*, restaurants(name)")
+    .select("*, restaurants(name, is_active)")
     .eq("campus_id", campusId ?? "")
     .eq("is_preorder", false)
     .order("category")
     .order("name");
 
-  // Fetch all categories for this campus
+  // Fetch all categories globally so admins don't have to recreate them per campus
   const { data: rawCategories } = await supabase
     .from("item_categories")
     .select("name")
-    .eq("campus_id", campusId ?? "")
     .order("name");
   
   const allCategories = rawCategories ? rawCategories.map((c) => c.name) : [];
 
   // Filter out items belonging to hidden restaurants.
-  const items = ((rawItems as Item[]) ?? []).filter(
-    (i) => !i.restaurant_id || activeRestIds.has(i.restaurant_id),
+  const items = ((rawItems as any[]) ?? []).filter(
+    (i) => !i.restaurant_id || i.restaurants?.is_active,
   );
 
   // Shift is active if the campus shift_active flag is true (defaults to true if null).
