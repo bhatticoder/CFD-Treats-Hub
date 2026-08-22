@@ -6,6 +6,7 @@ export interface Campus {
   name: string;
   domain_suffix: string;
   gender: "Male" | "Female" | null;
+  halls?: string[];
   logo_url: string | null;
   theme_color: string | null;
   payment_account_info: string | null;

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Minus, Plus, Upload, Store, CalendarClock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { computeTotals, effectivePrice } from "@/lib/domain/pricing";
-import { HOSTEL_BLOCKS, COD_EXTRA_CHARGE, PLATFORM_FEE } from "@/lib/domain/constants";
+import { COD_EXTRA_CHARGE, PLATFORM_FEE } from "@/lib/domain/constants";
 import { validateRoom } from "@/lib/domain/validators";
 import { money, cn } from "@/lib/utils";
 import { PageContainer } from "@/components/app-shell";
@@ -24,6 +24,7 @@ export function PreorderBrowser({
   isGirlsCampus,
   deliveryActive,
   collectionRoom,
+  halls,
 }: {
   items: Item[];
   categories?: string[];
@@ -33,11 +34,12 @@ export function PreorderBrowser({
   isGirlsCampus: boolean;
   deliveryActive: boolean;
   collectionRoom: string | null;
+  halls: string[];
 }) {
   const router = useRouter();
   const [qty, setQty] = useState<Record<string, number>>({});
   const [room, setRoom] = useState(defaultRoom);
-  const [block, setBlock] = useState(defaultBlock || HOSTEL_BLOCKS[0]);
+  const [block, setBlock] = useState(defaultBlock || (halls && halls.length > 0 ? halls[0] : ""));
   const [method, setMethod] = useState<"online" | "cod">("online");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -182,9 +184,17 @@ export function PreorderBrowser({
         if (upErr) throw upErr;
         screenshotUrl = supabase.storage.from("payment-screenshots").getPublicUrl(path).data.publicUrl;
       }
+      
+      let finalBlock = block;
+      if (halls && halls.length === 1) {
+        finalBlock = halls[0];
+      } else if (!finalBlock) {
+        finalBlock = "Main";
+      }
+
       const { data, error } = await supabase.rpc("place_preorder", {
         p_room_number: deliveryActive ? room.trim() : `Pickup: ${collectionRoom || "Counter"}`,
-        p_block: isGirlsCampus ? "Main" : block,
+        p_block: finalBlock,
         p_payment_method: method,
         p_payment_screenshot_url: screenshotUrl,
         p_items: lines.map((l) => ({ item_id: l.item.id, quantity: l.quantity })),
@@ -329,11 +339,12 @@ export function PreorderBrowser({
                     onChange={(e) => setRoom(e.target.value.replace(/\D/g, ""))}
                   />
                 </div>
-                {!isGirlsCampus && (
+                {(!halls || halls.length > 1) && (
                   <div>
-                    <Label>Block</Label>
+                    <Label>Block / Hall</Label>
                     <Select value={block} onChange={(e) => setBlock(e.target.value)}>
-                      {HOSTEL_BLOCKS.map((b) => (
+                      <option value="">Select...</option>
+                      {halls?.map((b) => (
                         <option key={b} value={b}>
                           {b}
                         </option>

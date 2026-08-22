@@ -8,7 +8,6 @@ export const PLATFORM_FEE = 5.0;
 export const GST_PERCENT = 5.0;
 export const COD_EXTRA_CHARGE = 30.0;
 
-export const HOSTEL_BLOCKS = ["Iqbal", "Jinnah"] as const;
 export const GENDERS = ["Male", "Female"] as const;
 
 export const CATEGORIES = [

@@ -7,7 +7,7 @@ import { Minus, Plus, Trash2, Upload, PartyPopper } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useCart, CART_TTL } from "@/lib/store/cart";
 import { computeTotals, effectivePrice } from "@/lib/domain/pricing";
-import { HOSTEL_BLOCKS, COD_EXTRA_CHARGE, PLATFORM_FEE } from "@/lib/domain/constants";
+import { COD_EXTRA_CHARGE, PLATFORM_FEE } from "@/lib/domain/constants";
 import { validateRoom } from "@/lib/domain/validators";
 import { money, cn } from "@/lib/utils";
 import type { Voucher, Campus } from "@/lib/types/models";
@@ -22,7 +22,7 @@ export default function CartPage() {
   const router = useRouter();
   const { lines, increment, decrement, remove, clear, refreshItems, lastRefreshed } = useCart();
   const [room, setRoom] = useState("");
-  const [block, setBlock] = useState<string>(HOSTEL_BLOCKS[0]);
+  const [block, setBlock] = useState<string>("");
   const [method, setMethod] = useState<"online" | "cod">("online");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -199,10 +199,18 @@ export default function CartPage() {
           .getPublicUrl(path).data.publicUrl;
       }
 
+      // Dynamic block resolution based on halls
+      let finalBlock = block;
+      if (campus?.halls && campus.halls.length === 1) {
+        finalBlock = campus.halls[0];
+      } else if (!finalBlock) {
+        finalBlock = "Main"; // fallback
+      }
+
       // Server prices the order from item_id + quantity only.
       const { data, error } = await supabase.rpc("place_order", {
         p_room_number: deliveryActive ? room.trim() : `Pickup: ${collectionRoom || "Counter"}`,
-        p_block: isGirlsCampus ? "Main" : block,
+        p_block: finalBlock,
         p_payment_method: method,
         p_payment_screenshot_url: screenshotUrl,
         p_items: lines.map((l) => ({
@@ -322,11 +330,12 @@ export default function CartPage() {
                     placeholder="Digits only"
                   />
                 </div>
-                {!isGirlsCampus && (
+                {(!campus?.halls || campus.halls.length > 1) && (
                   <div>
-                    <Label>Block</Label>
+                    <Label>Block / Hall</Label>
                     <Select value={block} onChange={(e) => setBlock(e.target.value)}>
-                      {HOSTEL_BLOCKS.map((b) => (
+                      <option value="">Select...</option>
+                      {campus?.halls?.map((b) => (
                         <option key={b} value={b}>
                           {b}
                         </option>

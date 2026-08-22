@@ -20,6 +20,7 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
   const [name, setName] = useState("");
   const [domain, setDomain] = useState(DEFAULT_DOMAIN_SUFFIX);
   const [gender, setGender] = useState<string>("Male");
+  const [halls, setHalls] = useState("");
   const [codCap, setCodCap] = useState("100");
   const [deliveryActive, setDeliveryActive] = useState(true);
   const [collectionRoom, setCollectionRoom] = useState("");
@@ -72,6 +73,7 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
     setName("");
     setDomain(DEFAULT_DOMAIN_SUFFIX);
     setGender("Male");
+    setHalls("");
     setCodCap("100");
     setDeliveryActive(true);
     setCollectionRoom("");
@@ -84,6 +86,7 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
     setName(c.name);
     setDomain(c.domain_suffix || DEFAULT_DOMAIN_SUFFIX);
     setGender(c.gender || "Male");
+    setHalls(c.halls ? c.halls.join(", ") : "");
     setCodCap(String(c.cod_cap_percent ?? 100));
     setDeliveryActive(c.delivery_active ?? true);
     setCollectionRoom(c.collection_room || "");
@@ -100,6 +103,7 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
       name: name.trim(),
       domain_suffix: domain.trim().toLowerCase(),
       gender: gender as "Male" | "Female",
+      halls: halls.split(",").map(h => h.trim()).filter(h => h.length > 0),
       cod_cap_percent: Number(codCap) || 100,
       delivery_active: deliveryActive,
       collection_room: !deliveryActive ? collectionRoom.trim() : null,
@@ -320,6 +324,11 @@ export function CampusesManager({ campuses }: { campuses: Campus[] }) {
               <Label>COD cap %</Label>
               <Input inputMode="numeric" value={codCap} onChange={(e) => setCodCap(e.target.value.replace(/\D/g, ""))} />
             </div>
+          </div>
+          <div>
+            <Label>Halls / Blocks</Label>
+            <Input value={halls} onChange={(e) => setHalls(e.target.value)} placeholder="e.g. Iqbal, Jinnah" />
+            <p className="mt-1 text-xs text-text-muted">Comma-separated list of blocks or halls</p>
           </div>
           <div className="flex items-center justify-between rounded-xl border border-border bg-bg-muted p-3">
             <div>

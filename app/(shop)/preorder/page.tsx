@@ -86,11 +86,12 @@ export default async function PreorderPage() {
       items={(items as Item[]) ?? []}
       categories={allCategories}
       defaultRoom={p?.room_number ?? ""}
-      defaultBlock={p?.block ?? "Iqbal"}
+      defaultBlock={p?.block ?? (campus?.halls && campus.halls.length > 0 ? campus.halls[0] : "")}
       account={campus?.payment_account_info ?? null}
       isGirlsCampus={campus?.gender === "Female"}
       deliveryActive={campus?.delivery_active ?? true}
       collectionRoom={campus?.collection_room ?? null}
+      halls={campus?.halls ?? []}
     />
   );
 }

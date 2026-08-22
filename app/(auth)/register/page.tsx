@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Card, CardBody } from "@/components/ui/card";
-import { HOSTEL_BLOCKS, GENDERS } from "@/lib/domain/constants";
+import { GENDERS } from "@/lib/domain/constants";
 import { validatePhone, validateRoom } from "@/lib/domain/validators";
 import type { Campus } from "@/lib/types/models";
 
@@ -18,7 +18,7 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState("");
   const [gender, setGender] = useState<string>("");
   const [campusId, setCampusId] = useState<string>("");
-  const [block, setBlock] = useState<string>(HOSTEL_BLOCKS[0]);
+  const [block, setBlock] = useState<string>("");
   const [room, setRoom] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +75,14 @@ export default function RegisterPage() {
     }
     
     const isGirlsCampus = selectedCampus?.gender === "Female";
-    const finalBlock = isGirlsCampus ? "Main" : block;
+    
+    // Dynamic block resolution based on halls
+    let finalBlock = block;
+    if (selectedCampus?.halls && selectedCampus.halls.length === 1) {
+      finalBlock = selectedCampus.halls[0];
+    } else if (!finalBlock) {
+      finalBlock = "Main"; // fallback
+    }
 
     const { error } = await supabase.from("profiles").insert({
       id: uid,
@@ -148,12 +155,13 @@ export default function RegisterPage() {
               ))}
             </Select>
           </div>
-          <div className={`grid ${campuses.find((c) => c.id === campusId)?.gender === "Female" ? "grid-cols-1" : "grid-cols-2"} gap-3`}>
-            {campuses.find((c) => c.id === campusId)?.gender !== "Female" && (
+          <div className={`grid ${(!campuses.find(c => c.id === campusId)?.halls || campuses.find(c => c.id === campusId)!.halls!.length <= 1) ? "grid-cols-1" : "grid-cols-2"} gap-3`}>
+            {(campuses.find((c) => c.id === campusId)?.halls?.length ?? 0) > 1 && (
               <div>
-                <Label>Block</Label>
+                <Label>Block / Hall</Label>
                 <Select value={block} onChange={(e) => setBlock(e.target.value)}>
-                  {HOSTEL_BLOCKS.map((b) => (
+                  <option value="">Select...</option>
+                  {campuses.find((c) => c.id === campusId)?.halls?.map((b) => (
                     <option key={b} value={b}>
                       {b}
                     </option>
