@@ -499,7 +499,7 @@ export default function CartPage() {
         size="lg"
         variant="success"
         loading={placing}
-        disabled={campusClosed}
+        disabled={campusClosed || !deliveryActive}
         onClick={placeOrder}
       >
         <PartyPopper className="h-5 w-5" /> Place order

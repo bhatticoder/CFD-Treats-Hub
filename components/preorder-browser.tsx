@@ -462,7 +462,7 @@ export function PreorderBrowser({
       </Card>
 
       {error && <p className="mb-3 text-sm text-error">{error}</p>}
-      <Button className="w-full" size="lg" variant="success" loading={busy} onClick={submit}>
+      <Button className="w-full" size="lg" variant="success" loading={busy} onClick={submit} disabled={!deliveryActive}>
         Place pre-order
       </Button>
     </PageContainer>
