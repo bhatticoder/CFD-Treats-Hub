@@ -76,15 +76,20 @@ export function PreorderBrowser({
     return ["All", ...Array.from(set).sort()];
   }, [items]);
 
-  // Distinct categories present in this campus's items + all admin-defined categories
+  // Distinct categories present in this campus's items that are also defined by admin
   const dynamicCategories = useMemo(() => {
-    const set = new Set<string>(categories);
+    const set = new Set<string>();
     items.forEach((i) => {
       if (i.category) {
-        i.category.split(',').forEach(c => set.add(c.trim()));
+        i.category.split(',').forEach(c => {
+          const trimmed = c.trim();
+          if (categories.length === 0 || categories.includes(trimmed)) {
+            set.add(trimmed);
+          }
+        });
       }
     });
-    return ["All", ...Array.from(set).filter(Boolean).sort()];
+    return ["All", ...Array.from(set).sort()];
   }, [items, categories]);
 
   // Filter items based on selected category and restaurant
