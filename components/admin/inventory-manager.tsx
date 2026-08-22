@@ -23,7 +23,7 @@ type Draft = {
   category: string;
   custom_instruction: string;
   is_available: boolean;
-  restaurant_id: string;
+  restaurant_ids: Record<string, string>;
   campus_ids: string[];
   expected_arrival: string;
   is_preorder: boolean;
@@ -38,7 +38,7 @@ const empty: Draft = {
   category: "Snacks",
   custom_instruction: "",
   is_available: true,
-  restaurant_id: "",
+  restaurant_ids: {},
   campus_ids: [],
   expected_arrival: "",
   is_preorder: false,
@@ -112,7 +112,7 @@ export function InventoryManager({
       category: item.category,
       custom_instruction: item.custom_instruction ?? "",
       is_available: item.is_available,
-      restaurant_id: item.restaurant_id ?? "",
+      restaurant_ids: item.campus_id && item.restaurant_id ? { [item.campus_id]: item.restaurant_id } : {},
       campus_ids: item.campus_id ? [item.campus_id] : [],
       expected_arrival: item.expected_arrival ?? "",
       is_preorder: item.is_preorder,
@@ -142,14 +142,13 @@ export function InventoryManager({
       const payload = {
         name: draft.name.trim(),
         description: draft.description.trim() || null,
-        price: Number(draft.price) || 0,
-        stock_quantity: Number(draft.stock_quantity) || 0,
-        delivery_fee: Number(draft.delivery_fee) || 0,
+        price: Number(draft.price),
+        stock_quantity: Number(draft.stock_quantity),
+        delivery_fee: Number(draft.delivery_fee),
         category: draft.category,
         custom_instruction: draft.custom_instruction.trim() || null,
         is_available: draft.is_available,
         image_url: imageUrl,
-        restaurant_id: draft.restaurant_id || null,
         expected_arrival: draft.expected_arrival.trim() || null,
         is_preorder: draft.is_preorder,
       };
@@ -157,19 +156,20 @@ export function InventoryManager({
       if (editing) {
         // Update the current item's original campus
         const originalCampus = editing.campus_id;
-        const { error: upErr } = await supabase.from("items").update({ ...payload, campus_id: originalCampus }).eq("id", editing.id);
+        const payloadForOriginal = { ...payload, campus_id: originalCampus, restaurant_id: draft.restaurant_ids[originalCampus] || null };
+        const { error: upErr } = await supabase.from("items").update(payloadForOriginal).eq("id", editing.id);
         if (upErr) throw upErr;
         
         // If they selected additional campuses during edit, duplicate the item for them!
         const newCampuses = draft.campus_ids.filter(id => id !== originalCampus);
         if (newCampuses.length > 0) {
-          const inserts = newCampuses.map(id => ({ ...payload, campus_id: id }));
+          const inserts = newCampuses.map(id => ({ ...payload, campus_id: id, restaurant_id: draft.restaurant_ids[id] || null }));
           const { error: insErr } = await supabase.from("items").insert(inserts);
           if (insErr) throw insErr;
         }
       } else {
         // Bulk insert for all selected campuses
-        const inserts = draft.campus_ids.map(id => ({ ...payload, campus_id: id }));
+        const inserts = draft.campus_ids.map(id => ({ ...payload, campus_id: id, restaurant_id: draft.restaurant_ids[id] || null }));
         const { error: insErr } = await supabase.from("items").insert(inserts);
         if (insErr) throw insErr;
       }
@@ -402,7 +402,7 @@ export function InventoryManager({
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label>Campus (Select multiple)</Label>
               <div className="flex flex-col gap-2 mt-2">
@@ -415,7 +415,13 @@ export function InventoryManager({
                         if (e.target.checked) {
                           setDraft({ ...draft, campus_ids: [...draft.campus_ids, c.id] });
                         } else {
-                          setDraft({ ...draft, campus_ids: draft.campus_ids.filter((id) => id !== c.id) });
+                          const newRestaurantIds = { ...draft.restaurant_ids };
+                          delete newRestaurantIds[c.id]; // cleanup
+                          setDraft({ 
+                            ...draft, 
+                            campus_ids: draft.campus_ids.filter((id) => id !== c.id),
+                            restaurant_ids: newRestaurantIds
+                          });
                         }
                       }}
                       className="h-4 w-4 rounded border-border text-primary focus:ring-primary bg-surface"
@@ -425,16 +431,40 @@ export function InventoryManager({
                 ))}
               </div>
             </div>
+            
             <div>
-              <Label>Restaurant (optional)</Label>
-              <Select value={draft.restaurant_id} onChange={(e) => setDraft({ ...draft, restaurant_id: e.target.value })}>
-                <option value="">None (In-house)</option>
-                {restaurants.filter(r => draft.campus_ids.includes(r.campus_id) || draft.campus_ids.length === 0).map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name} {draft.campus_ids.length !== 1 ? `(${campuses.find(c => c.id === r.campus_id)?.name})` : ""}
-                  </option>
-                ))}
-              </Select>
+              {draft.campus_ids.length > 0 && (
+                <div className="flex flex-col gap-3">
+                  <Label>Restaurants (per campus)</Label>
+                  {draft.campus_ids.map(campusId => {
+                    const campusName = campuses.find(c => c.id === campusId)?.name;
+                    const campusRestaurants = restaurants.filter(r => r.campus_id === campusId);
+                    
+                    if (campusRestaurants.length === 0) return null;
+
+                    return (
+                      <div key={campusId} className="flex flex-col gap-1 bg-surface p-2 rounded-md border border-border">
+                        <span className="text-xs text-text-muted font-bold">{campusName}</span>
+                        <Select 
+                          className="h-8 text-sm"
+                          value={draft.restaurant_ids[campusId] || ""} 
+                          onChange={(e) => setDraft({ 
+                            ...draft, 
+                            restaurant_ids: { ...draft.restaurant_ids, [campusId]: e.target.value }
+                          })}
+                        >
+                          <option value="">None (In-house)</option>
+                          {campusRestaurants.map((r) => (
+                            <option key={r.id} value={r.id}>
+                              {r.name}
+                            </option>
+                          ))}
+                        </Select>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
           <div className="grid grid-cols-1">
