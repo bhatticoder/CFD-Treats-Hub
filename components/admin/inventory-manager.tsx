@@ -23,7 +23,7 @@ type Draft = {
   category: string;
   custom_instruction: string;
   is_available: boolean;
-  restaurant_ids: Record<string, string>;
+  restaurant_ids: Record<string, string[]>;
   campus_ids: string[];
   expected_arrival: string;
   is_preorder: boolean;
@@ -112,7 +112,7 @@ export function InventoryManager({
       category: item.category,
       custom_instruction: item.custom_instruction ?? "",
       is_available: item.is_available,
-      restaurant_ids: item.campus_id && item.restaurant_id ? { [item.campus_id]: item.restaurant_id } : {},
+      restaurant_ids: item.campus_id && item.restaurant_id ? { [item.campus_id]: [item.restaurant_id] } : {},
       campus_ids: item.campus_id ? [item.campus_id] : [],
       expected_arrival: item.expected_arrival ?? "",
       is_preorder: item.is_preorder,
@@ -153,25 +153,48 @@ export function InventoryManager({
         is_preorder: draft.is_preorder,
       };
 
+      let inserts: any[] = [];
+      for (const cid of draft.campus_ids) {
+        const rIds = draft.restaurant_ids[cid];
+        if (!rIds || rIds.length === 0) {
+           inserts.push({ ...payload, campus_id: cid, restaurant_id: null });
+        } else {
+           for (const rId of rIds) {
+             inserts.push({ ...payload, campus_id: cid, restaurant_id: rId });
+           }
+        }
+      }
+
       if (editing) {
-        // Update the current item's original campus
         const originalCampus = editing.campus_id;
-        const payloadForOriginal = { ...payload, campus_id: originalCampus, restaurant_id: draft.restaurant_ids[originalCampus] || null };
-        const { error: upErr } = await supabase.from("items").update(payloadForOriginal).eq("id", editing.id);
-        if (upErr) throw upErr;
+        const originalRest = editing.restaurant_id;
         
-        // If they selected additional campuses during edit, duplicate the item for them!
-        const newCampuses = draft.campus_ids.filter(id => id !== originalCampus);
-        if (newCampuses.length > 0) {
-          const inserts = newCampuses.map(id => ({ ...payload, campus_id: id, restaurant_id: draft.restaurant_ids[id] || null }));
+        let targetIndex = inserts.findIndex(i => i.campus_id === originalCampus && i.restaurant_id === originalRest);
+        if (targetIndex === -1) {
+           targetIndex = inserts.findIndex(i => i.campus_id === originalCampus);
+        }
+        
+        if (targetIndex !== -1) {
+           const targetPayload = inserts[targetIndex];
+           const { error: upErr } = await supabase.from("items").update(targetPayload).eq("id", editing.id);
+           if (upErr) throw upErr;
+           inserts.splice(targetIndex, 1);
+        } else if (inserts.length > 0) {
+           const targetPayload = inserts[0];
+           const { error: upErr } = await supabase.from("items").update(targetPayload).eq("id", editing.id);
+           if (upErr) throw upErr;
+           inserts.splice(0, 1);
+        }
+        
+        if (inserts.length > 0) {
           const { error: insErr } = await supabase.from("items").insert(inserts);
           if (insErr) throw insErr;
         }
       } else {
-        // Bulk insert for all selected campuses
-        const inserts = draft.campus_ids.map(id => ({ ...payload, campus_id: id, restaurant_id: draft.restaurant_ids[id] || null }));
-        const { error: insErr } = await supabase.from("items").insert(inserts);
-        if (insErr) throw insErr;
+        if (inserts.length > 0) {
+          const { error: insErr } = await supabase.from("items").insert(inserts);
+          if (insErr) throw insErr;
+        }
       }
 
       setOpen(false);
@@ -445,21 +468,50 @@ export function InventoryManager({
                     return (
                       <div key={campusId} className="flex flex-col gap-1 bg-surface p-2 rounded-md border border-border">
                         <span className="text-xs text-text-muted font-bold">{campusName}</span>
-                        <Select 
-                          className="h-8 text-sm"
-                          value={draft.restaurant_ids[campusId] || ""} 
-                          onChange={(e) => setDraft({ 
-                            ...draft, 
-                            restaurant_ids: { ...draft.restaurant_ids, [campusId]: e.target.value }
+                        <div className="flex flex-col gap-2 mt-1">
+                          <label className="flex items-center gap-2 cursor-pointer text-sm text-text">
+                            <input
+                              type="checkbox"
+                              checked={!draft.restaurant_ids[campusId] || draft.restaurant_ids[campusId].length === 0}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setDraft({
+                                    ...draft,
+                                    restaurant_ids: { ...draft.restaurant_ids, [campusId]: [] }
+                                  });
+                                }
+                              }}
+                              className="rounded border-accent-warm text-primary focus:ring-primary"
+                            />
+                            None (In-house)
+                          </label>
+                          {campusRestaurants.map((r) => {
+                            const isChecked = draft.restaurant_ids[campusId]?.includes(r.id);
+                            return (
+                              <label key={r.id} className="flex items-center gap-2 cursor-pointer text-sm text-text">
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={(e) => {
+                                    const current = draft.restaurant_ids[campusId] || [];
+                                    let next = current;
+                                    if (e.target.checked) {
+                                      next = [...current, r.id];
+                                    } else {
+                                      next = current.filter(id => id !== r.id);
+                                    }
+                                    setDraft({
+                                      ...draft,
+                                      restaurant_ids: { ...draft.restaurant_ids, [campusId]: next }
+                                    });
+                                  }}
+                                  className="rounded border-accent-warm text-primary focus:ring-primary"
+                                />
+                                {r.name}
+                              </label>
+                            );
                           })}
-                        >
-                          <option value="">None (In-house)</option>
-                          {campusRestaurants.map((r) => (
-                            <option key={r.id} value={r.id}>
-                              {r.name}
-                            </option>
-                          ))}
-                        </Select>
+                        </div>
                       </div>
                     );
                   })}
