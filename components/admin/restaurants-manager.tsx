@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Store } from "lucide-react";
+import { Plus, Store, Trash } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { PageContainer } from "@/components/app-shell";
 import { Card, CardBody } from "@/components/ui/card";
@@ -40,6 +40,12 @@ export function RestaurantsManager({
   }
   async function toggle(r: Restaurant) {
     await createClient().from("restaurants").update({ is_active: !r.is_active }).eq("id", r.id);
+    router.refresh();
+  }
+  
+  async function remove(id: string) {
+    if (!confirm("Are you sure you want to delete this restaurant? Items assigned to it will become unassigned.")) return;
+    await createClient().from("restaurants").delete().eq("id", id);
     router.refresh();
   }
 
@@ -90,6 +96,12 @@ export function RestaurantsManager({
                   {r.is_active ? "Active" : "Hidden"}
                 </Badge>
                 <Switch checked={r.is_active} onChange={() => toggle(r)} />
+                <button
+                  onClick={() => remove(r.id)}
+                  className="ml-2 grid h-8 w-8 place-items-center rounded-xl bg-error/10 text-error hover:bg-error/20"
+                >
+                  <Trash className="h-4 w-4" />
+                </button>
               </CardBody>
             </Card>
           ))}

@@ -17,6 +17,7 @@ import type { CartLine, Item, Voucher } from "@/lib/types/models";
 
 export function PreorderBrowser({
   items,
+  categories = [],
   defaultRoom,
   defaultBlock,
   account,
@@ -25,6 +26,7 @@ export function PreorderBrowser({
   collectionRoom,
 }: {
   items: Item[];
+  categories?: string[];
   defaultRoom: string;
   defaultBlock: string;
   account: string | null;
@@ -41,6 +43,9 @@ export function PreorderBrowser({
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [category, setCategory] = useState<string>("All");
+  const [restaurantFilter, setRestaurantFilter] = useState<string>("All");
 
   const [promoCode, setPromoCode] = useState("");
   const [additionalNote, setAdditionalNote] = useState("");
@@ -62,15 +67,46 @@ export function PreorderBrowser({
     }
   }, [items]);
 
+  // Distinct restaurants present in this campus's items.
+  const restaurants = useMemo(() => {
+    const set = new Set<string>();
+    items.forEach((i) => {
+      if (i.restaurants?.name) set.add(i.restaurants.name);
+    });
+    return ["All", ...Array.from(set).sort()];
+  }, [items]);
+
+  // Distinct categories present in this campus's items + all admin-defined categories
+  const dynamicCategories = useMemo(() => {
+    const set = new Set<string>(categories);
+    items.forEach((i) => {
+      if (i.category) {
+        i.category.split(',').forEach(c => set.add(c.trim()));
+      }
+    });
+    return ["All", ...Array.from(set).filter(Boolean).sort()];
+  }, [items, categories]);
+
+  // Filter items based on selected category and restaurant
+  const visible = useMemo(
+    () =>
+      items.filter(
+        (i) =>
+          (category === "All" || (i.category && i.category.split(',').map(c => c.trim()).includes(category))) &&
+          (restaurantFilter === "All" || i.restaurants?.name === restaurantFilter),
+      ),
+    [items, category, restaurantFilter],
+  );
+
   const groups = useMemo(() => {
     const map = new Map<string, Item[]>();
-    for (const it of items) {
+    for (const it of visible) {
       const r = it.restaurants?.name ?? "Other";
       if (!map.has(r)) map.set(r, []);
       map.get(r)!.push(it);
     }
     return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  }, [items]);
+  }, [visible]);
 
   const lines: CartLine[] = items
     .filter((i) => (qty[i.id] ?? 0) > 0)
@@ -193,7 +229,49 @@ export function PreorderBrowser({
         Reserve items across restaurants. Pay now; the founder buys based on pre-orders.
       </p>
 
-      {groups.map(([restaurant, list]) => (
+      {/* Category tabs */}
+      <div className="mb-3 flex flex-wrap gap-2">
+        {dynamicCategories.map((c) => (
+          <button
+            key={c}
+            onClick={() => setCategory(c)}
+            className={cn(
+              "rounded-full border px-4 py-1.5 text-sm transition-colors",
+              category === c
+                ? "border-primary bg-primary text-on-primary"
+                : "border-border bg-surface text-text-muted hover:bg-bg-muted",
+            )}
+          >
+            {c}
+          </button>
+        ))}
+      </div>
+
+      {/* Restaurant tabs */}
+      {restaurants.length > 1 && (
+        <div className="mb-5 flex flex-wrap gap-2">
+          {restaurants.map((r) => (
+            <button
+              key={r}
+              onClick={() => setRestaurantFilter(r)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm transition-colors",
+                restaurantFilter === r
+                  ? "border-accent-warm bg-accent-warm text-white"
+                  : "border-border bg-surface text-text-muted hover:bg-bg-muted",
+              )}
+            >
+              {r !== "All" && <Store className="h-3.5 w-3.5" />}
+              {r}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {groups.length === 0 ? (
+        <p className="py-10 text-center text-text-faint">No items found.</p>
+      ) : (
+        groups.map(([restaurant, list]) => (
         <div key={restaurant} className="mb-6">
           <p className="mb-2 flex items-center gap-2 font-bold text-text">
             <Store className="h-4 w-4 text-primary" /> {restaurant}
@@ -231,7 +309,7 @@ export function PreorderBrowser({
             ))}
           </div>
         </div>
-      ))}
+      )))}
 
       <Card className="mb-4">
         <CardBody className="space-y-3">

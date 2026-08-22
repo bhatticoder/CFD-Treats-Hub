@@ -50,7 +50,24 @@ export default async function PreorderPage() {
     );
   }
 
-  let { data: items } = await supabase
+  // Fetch IDs of active (non-hidden) restaurants for this campus.
+  const { data: activeRestaurants } = await supabase
+    .from("restaurants")
+    .select("id")
+    .eq("campus_id", p?.campus_id ?? "")
+    .eq("is_active", true);
+  const activeRestIds = new Set((activeRestaurants ?? []).map((r) => r.id));
+
+  // Fetch all categories for this campus
+  const { data: rawCategories } = await supabase
+    .from("item_categories")
+    .select("name")
+    .eq("campus_id", p?.campus_id ?? "")
+    .order("name");
+  
+  const allCategories = rawCategories ? rawCategories.map((c) => c.name) : [];
+
+  let { data: rawItems } = await supabase
     .from("items")
     .select("*, restaurants(name)")
     .eq("campus_id", p?.campus_id ?? "")
@@ -58,19 +75,25 @@ export default async function PreorderPage() {
     .eq("is_available", true)
     .order("name");
 
-  if (!items || items.length === 0) {
+  if (!rawItems || rawItems.length === 0) {
     const { data: fallback } = await supabase
       .from("items")
       .select("*, restaurants(name)")
       .eq("campus_id", p?.campus_id ?? "")
       .eq("is_available", true)
       .order("name");
-    items = fallback;
+    rawItems = fallback;
   }
+
+  // Filter out items belonging to hidden restaurants.
+  const items = ((rawItems as Item[]) ?? []).filter(
+    (i) => !i.restaurant_id || activeRestIds.has(i.restaurant_id),
+  );
 
   return (
     <PreorderBrowser
       items={(items as Item[]) ?? []}
+      categories={allCategories}
       defaultRoom={p?.room_number ?? ""}
       defaultBlock={p?.block ?? "Iqbal"}
       account={campus?.payment_account_info ?? null}
