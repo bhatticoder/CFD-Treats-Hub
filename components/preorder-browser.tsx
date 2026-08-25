@@ -13,6 +13,7 @@ import { Card, CardBody } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/misc";
+import { Modal } from "@/components/ui/modal";
 import type { CartLine, Item, Voucher } from "@/lib/types/models";
 
 export function PreorderBrowser({
@@ -45,6 +46,7 @@ export function PreorderBrowser({
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
 
   const [category, setCategory] = useState<string>("All");
   const [restaurantFilter, setRestaurantFilter] = useState<string>("All");
@@ -241,7 +243,7 @@ export function PreorderBrowser({
     <PageContainer max="max-w-3xl">
       <h1 className="text-2xl font-extrabold text-text">Pre-order for tonight</h1>
       <p className="mb-5 text-sm text-text-muted">
-        Reserve items across restaurants. Pay now; the founder buys based on pre-orders.
+        Reserve items across restaurants and receive tonight 🙌🏻
       </p>
 
       {/* Category tabs */}
@@ -295,7 +297,10 @@ export function PreorderBrowser({
             {list.map((it) => (
               <Card key={it.id}>
                 <CardBody className="flex items-center gap-3 p-3">
-                  <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-bg-muted text-xl">
+                  <div 
+                    className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-bg-muted text-xl cursor-pointer"
+                    onClick={() => setSelectedItem(it)}
+                  >
                     {it.image_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={it.image_url} alt="" className="h-full w-full object-cover" />
@@ -303,7 +308,7 @@ export function PreorderBrowser({
                       "🍽️"
                     )}
                   </div>
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 cursor-pointer" onClick={() => setSelectedItem(it)}>
                     <p className="truncate font-semibold text-text">{it.name}</p>
                     <p className="text-sm font-bold text-primary">{money(it.discounted_price ?? it.price)}</p>
                     <p className="text-[11px] leading-tight text-text-faint/90 mt-1 pr-2">
@@ -465,6 +470,27 @@ export function PreorderBrowser({
       <Button className="w-full" size="lg" variant="success" loading={busy} onClick={submit} disabled={!deliveryActive}>
         Place pre-order
       </Button>
+
+      <Modal open={!!selectedItem} onClose={() => setSelectedItem(null)} title={selectedItem?.name || "Item Details"}>
+        {selectedItem && (
+          <div className="space-y-4">
+            {selectedItem.image_url && (
+              <div className="overflow-hidden rounded-xl border border-border">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={selectedItem.image_url} alt={selectedItem.name} className="w-full object-cover max-h-64" />
+              </div>
+            )}
+            <div>
+              <p className="text-lg font-bold text-primary">{money(selectedItem.discounted_price ?? selectedItem.price)}</p>
+              {selectedItem.description ? (
+                <p className="mt-2 text-sm text-text-muted whitespace-pre-wrap">{selectedItem.description}</p>
+              ) : (
+                <p className="mt-2 text-sm italic text-text-faint">No description provided.</p>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
     </PageContainer>
   );
 }
