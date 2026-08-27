@@ -35,7 +35,7 @@ export const useCart = create<CartState>()(
 
           const existing = currentLines.find((l) => l.item.id === item.id);
           if (existing) {
-            if (existing.quantity >= item.stock_quantity) return { lines: currentLines };
+            if (!item.is_preorder && existing.quantity >= item.stock_quantity) return { lines: currentLines };
             return {
               lines: currentLines.map((l) =>
                 l.item.id === item.id
@@ -44,13 +44,13 @@ export const useCart = create<CartState>()(
               ),
             };
           }
-          if (item.stock_quantity < 1) return { lines: currentLines };
+          if (!item.is_preorder && item.stock_quantity < 1) return { lines: currentLines };
           return { lines: [...currentLines, { item, quantity: 1 }] };
         }),
       increment: (itemId) =>
         set((s) => ({
           lines: s.lines.map((l) =>
-            l.item.id === itemId && l.quantity < l.item.stock_quantity
+            l.item.id === itemId && (l.item.is_preorder || l.quantity < l.item.stock_quantity)
               ? { ...l, quantity: l.quantity + 1 }
               : l,
           ),
@@ -77,7 +77,7 @@ export const useCart = create<CartState>()(
               if (!fresh.is_available) return null; // item unavailable — remove
               return {
                 item: fresh,
-                quantity: Math.min(l.quantity, fresh.stock_quantity || l.quantity),
+                quantity: fresh.is_preorder ? l.quantity : Math.min(l.quantity, fresh.stock_quantity || l.quantity),
               };
             })
             .filter((l): l is CartLine => l !== null && l.quantity > 0);
