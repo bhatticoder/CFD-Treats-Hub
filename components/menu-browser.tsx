@@ -9,6 +9,7 @@ import { money, cn } from "@/lib/utils";
 import { useCart } from "@/lib/store/cart";
 import { PageContainer } from "@/components/app-shell";
 import type { Item } from "@/lib/types/models";
+import Image from "next/image";
 
 export function MenuBrowser({
   items,
@@ -277,12 +278,12 @@ function ItemCard({
     >
       <div className="relative aspect-square bg-bg-muted">
         {item.image_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={item.image_url}
             alt={item.name}
+            fill
             className={cn(
-              "h-full w-full object-cover",
+              "object-cover",
               soldOut && "grayscale",
             )}
           />
@@ -442,11 +443,11 @@ function ItemDetailModal({
         {/* Image */}
         <div className="relative aspect-[4/3] w-full bg-bg-muted">
           {item.image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={item.image_url}
               alt={item.name}
-              className={cn("h-full w-full object-cover", soldOut && "grayscale")}
+              fill
+              className={cn("object-cover", soldOut && "grayscale")}
             />
           ) : (
             <div className="grid h-full place-items-center text-7xl">🍽️</div>

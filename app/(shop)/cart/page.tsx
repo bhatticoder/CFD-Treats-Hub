@@ -17,6 +17,7 @@ import { Input, Label, Select } from "@/components/ui/input";
 import { Card, CardBody } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/misc";
 import { ShoppingCart } from "lucide-react";
+import Image from "next/image";
 
 export default function CartPage() {
   const router = useRouter();
@@ -208,7 +209,8 @@ export default function CartPage() {
       }
 
       // Server prices the order from item_id + quantity only.
-      const { data, error } = await supabase.rpc("place_order", {
+      const rpcName = isPreorder ? "place_preorder" : "place_order";
+      const { data, error } = await supabase.rpc(rpcName, {
         p_room_number: deliveryActive ? room.trim() : `Pickup: ${collectionRoom || "Counter"}`,
         p_block: finalBlock,
         p_payment_method: method,
@@ -279,10 +281,9 @@ export default function CartPage() {
             layout
             className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3"
           >
-            <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-xl bg-bg-muted text-2xl">
+            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-bg-muted text-2xl flex items-center justify-center">
               {l.item.image_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={l.item.image_url} alt="" className="h-full w-full object-cover" />
+                <Image src={l.item.image_url} alt="" fill className="object-cover" />
               ) : (
                 "🍽️"
               )}
@@ -386,10 +387,9 @@ export default function CartPage() {
           {method === "online" && (
             <div>
               <Label>Payment screenshot</Label>
-              <label className="flex h-28 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-dashed border-border bg-bg-muted">
+              <label className="relative flex h-28 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-dashed border-border bg-bg-muted">
                 {preview ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={preview} alt="" className="h-full w-full object-cover" />
+                  <Image src={preview} alt="" fill className="object-cover" />
                 ) : (
                   <span className="flex flex-col items-center text-sm text-text-faint">
                     <Upload className="mb-1 h-6 w-6 text-primary" />

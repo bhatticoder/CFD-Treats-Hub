@@ -27,19 +27,25 @@ export const useCart = create<CartState>()(
       lastRefreshed: 0,
       add: (item) =>
         set((s) => {
-          const existing = s.lines.find((l) => l.item.id === item.id);
+          let currentLines = s.lines;
+          // Prevent mixing regular and preorder items.
+          if (currentLines.length > 0 && currentLines[0].item.is_preorder !== item.is_preorder) {
+            currentLines = [];
+          }
+
+          const existing = currentLines.find((l) => l.item.id === item.id);
           if (existing) {
-            if (existing.quantity >= item.stock_quantity) return s;
+            if (existing.quantity >= item.stock_quantity) return { lines: currentLines };
             return {
-              lines: s.lines.map((l) =>
+              lines: currentLines.map((l) =>
                 l.item.id === item.id
                   ? { ...l, quantity: l.quantity + 1 }
                   : l,
               ),
             };
           }
-          if (item.stock_quantity < 1) return s;
-          return { lines: [...s.lines, { item, quantity: 1 }] };
+          if (item.stock_quantity < 1) return { lines: currentLines };
+          return { lines: [...currentLines, { item, quantity: 1 }] };
         }),
       increment: (itemId) =>
         set((s) => ({
