@@ -11,6 +11,7 @@ import { Card, CardBody } from "@/components/ui/card";
 import { Badge } from "@/components/ui/misc";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/input";
+import Image from "next/image";
 import type { Order, Campus } from "@/lib/types/models";
 
 export function AdminOrders({ orders, campuses = [] }: { orders: Order[]; campuses?: Campus[] }) {
@@ -145,7 +146,15 @@ export function AdminOrders({ orders, campuses = [] }: { orders: Order[]; campus
                       {o.feedback && <p className="mt-1 text-xs text-text-muted italic">"{o.feedback}"</p>}
                     </div>
                   )}
-                  <div className="mt-2 flex items-center justify-between">
+                  {o.payment_screenshot_url && (
+                    <div className="mt-3">
+                      <p className="text-xs font-semibold text-text-muted mb-1">Payment Screenshot:</p>
+                      <a href={o.payment_screenshot_url} target="_blank" rel="noopener noreferrer" className="block relative h-32 w-24 rounded-lg overflow-hidden border border-border">
+                        <Image src={o.payment_screenshot_url} alt="Payment" fill className="object-cover" />
+                      </a>
+                    </div>
+                  )}
+                  <div className="mt-3 flex items-center justify-between">
                     <span className="font-bold text-primary">{money(o.total)}</span>
                     {!done && (
                       <div className="flex gap-2">
