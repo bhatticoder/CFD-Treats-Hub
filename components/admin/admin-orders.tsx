@@ -10,11 +10,13 @@ import { PageContainer } from "@/components/app-shell";
 import { Card, CardBody } from "@/components/ui/card";
 import { Badge } from "@/components/ui/misc";
 import { Button } from "@/components/ui/button";
-import type { Order } from "@/lib/types/models";
+import { Select } from "@/components/ui/input";
+import type { Order, Campus } from "@/lib/types/models";
 
-export function AdminOrders({ orders }: { orders: Order[] }) {
+export function AdminOrders({ orders, campuses = [] }: { orders: Order[]; campuses?: Campus[] }) {
   const router = useRouter();
   const [filter, setFilter] = useState<string>("all");
+  const [campusFilter, setCampusFilter] = useState<string>("all");
   const [busy, setBusy] = useState<string | null>(null);
 
   // Auto-refresh every 6 seconds to fetch newly placed orders live for Admin
@@ -26,7 +28,11 @@ export function AdminOrders({ orders }: { orders: Order[] }) {
   }, [router]);
 
   const filters = ["all", ...ORDER_STATUSES];
-  const visible = filter === "all" ? orders : orders.filter((o) => o.order_status === filter);
+  const visible = orders.filter(
+    (o) =>
+      (filter === "all" || o.order_status === filter) &&
+      (campusFilter === "all" || o.campus_id === campusFilter)
+  );
 
   async function act(order: Order, action: "deliver" | "cancel") {
     setBusy(order.id);
@@ -62,7 +68,23 @@ export function AdminOrders({ orders }: { orders: Order[] }) {
 
   return (
     <PageContainer>
-      <h1 className="mb-4 text-2xl font-extrabold text-text">Orders</h1>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-extrabold text-text">Orders</h1>
+        {campuses && campuses.length > 0 && (
+          <Select
+            value={campusFilter}
+            onChange={(e) => setCampusFilter(e.target.value)}
+            className="w-full sm:w-64"
+          >
+            <option value="all">All Campuses</option>
+            {campuses.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
+        )}
+      </div>
       <div className="mb-4 flex flex-wrap gap-2">
         {filters.map((f) => (
           <button
@@ -97,6 +119,22 @@ export function AdminOrders({ orders }: { orders: Order[] }) {
                     Room {o.room_number}, {o.block} · {o.payment_method.toUpperCase()} ·{" "}
                     {new Date(o.created_at).toLocaleString()}
                   </p>
+                  <p className="mt-1 text-sm flex items-center gap-1.5">
+                    <span className="font-semibold text-text">{o.profiles?.full_name || "Unknown Customer"}</span>
+                    {o.profiles?.phone && (
+                      <>
+                        <span className="text-text-muted">·</span>
+                        <a href={`tel:${o.profiles.phone}`} className="text-primary hover:underline font-medium">
+                          {o.profiles.phone}
+                        </a>
+                      </>
+                    )}
+                  </p>
+                  {o.campuses && (
+                    <p className="mt-0.5 text-xs font-semibold text-accent-warm">
+                      {o.campuses.name} {o.campuses.gender ? `(${o.campuses.gender} Hostel)` : ""}
+                    </p>
+                  )}
                   {o.rating && (
                     <div className="mt-2 rounded-lg bg-surface/50 border border-border p-2">
                       <div className="flex items-center gap-1 text-primary">

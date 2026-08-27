@@ -118,6 +118,9 @@ export interface Order {
   created_at: string;
   delivered_at: string | null;
   order_items?: OrderItem[];
+  // joined
+  profiles?: { full_name: string | null; phone: string | null } | null;
+  campuses?: { name: string; gender: string | null } | null;
 }
 
 export interface Voucher {
