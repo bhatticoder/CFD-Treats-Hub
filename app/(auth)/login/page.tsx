@@ -23,15 +23,15 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     const supabase = createClient();
-    
+
     // Check if email is eligible (either pre-existing or matches a valid campus domain)
     const { data: isEligible, error: checkErr } = await supabase.rpc("check_email_eligibility", { p_email: email.trim() });
-    
+
     if (checkErr) {
       setLoading(false);
       return setError("Could not verify email eligibility. Please try again.");
     }
-    
+
     if (!isEligible) {
       setLoading(false);
       return setError("Only specific domain emails can register, unless explicitly invited.");
@@ -46,7 +46,14 @@ export default function LoginPage() {
       },
     });
     setLoading(false);
-    if (error) return setError(error.message);
+    if (error) {
+      console.error("Supabase auth error:", error);
+      let msg = error.message;
+      if (!msg || msg === "{}" || msg === "{}") {
+        msg = "Email delivery failed. The custom SMTP settings in Supabase are likely incorrect or being blocked by the email provider.";
+      }
+      return setError(msg);
+    }
     router.push(`/verify?email=${encodeURIComponent(email.trim().toLowerCase())}`);
   }
 
