@@ -38,21 +38,9 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  // Helper to prevent hanging Supabase network calls from causing Vercel 504 GATEWAY_TIMEOUT
-  const fetchWithTimeout = <T>(promise: Promise<T>, ms = 3500): Promise<T | null> => {
-    return Promise.race([
-      promise,
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
-    ]);
-  };
-
-  let user = null;
-  try {
-    const userRes = await fetchWithTimeout(supabase.auth.getUser(), 3500);
-    user = userRes?.data?.user ?? null;
-  } catch (err) {
-    console.error("Middleware auth check timed out or failed:", err);
-  }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
   const isAuthPath = AUTH_PATHS.some((p) => path.startsWith(p));
@@ -67,31 +55,18 @@ export async function proxy(request: NextRequest) {
   }
 
   // Authenticated: resolve role/profile (self-select allowed by RLS).
-  let profile = null;
-  try {
-    const profileRes = await fetchWithTimeout(
-      Promise.resolve(
-        supabase
-          .from("profiles")
-          .select("role, is_active")
-          .eq("id", user.id)
-          .maybeSingle(),
-      ),
-      3500,
-    );
-    profile = profileRes && "data" in profileRes ? (profileRes.data as { role: Role; is_active: boolean } | null) : null;
-  } catch (err) {
-    console.error("Middleware profile check timed out or failed:", err);
-  }
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, is_active")
+    .eq("id", user.id)
+    .maybeSingle();
 
-  // No profile row yet or query timed out.
+  // No profile row yet → must complete registration.
   if (!profile) {
     if (path.startsWith("/api")) {
-      return NextResponse.json({ error: "Profile incomplete or timed out" }, { status: 403 });
+      return NextResponse.json({ error: "Profile incomplete" }, { status: 403 });
     }
-    // If user is trying to reach register, allow it; otherwise if profile fetch timed out, pass through to let page level handle it.
-    if (path === "/register") return response;
-    return response;
+    return path === "/register" ? response : redirect(request, "/register");
   }
   // Deactivated account → end the session for real. signOut()'s cleared cookies
   // don't survive onto a fresh redirect response, so clear them explicitly.
