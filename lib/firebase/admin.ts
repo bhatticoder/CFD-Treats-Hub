@@ -16,7 +16,11 @@ function getAdminApp(): App {
       });
     } else {
       // Pass projectId to prevent Admin SDK from hanging on metadata server requests in CLI emulator
-      app = initializeApp({ projectId: projectId || "cfd-treats-hub" });
+      // Pass serviceAccountId to allow createSessionCookie to sign tokens using the App Engine service account
+      app = initializeApp({ 
+        projectId: projectId || "cfd-treats-hub",
+        serviceAccountId: "cfd-treats-hub@appspot.gserviceaccount.com"
+      });
     }
   } else {
     app = getApps()[0];
