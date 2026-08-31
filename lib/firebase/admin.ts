@@ -39,12 +39,22 @@ export function getAdminDb(): Firestore {
 // Keep backward-compatible named exports as lazy getters
 export const adminAuth = new Proxy({} as Auth, {
   get(_, prop) {
-    return (getAdminAuth() as any)[prop];
+    const auth = getAdminAuth();
+    const value = (auth as any)[prop];
+    if (typeof value === 'function') {
+      return value.bind(auth);
+    }
+    return value;
   },
 });
 
 export const adminDb = new Proxy({} as Firestore, {
   get(_, prop) {
-    return (getAdminDb() as any)[prop];
+    const db = getAdminDb();
+    const value = (db as any)[prop];
+    if (typeof value === 'function') {
+      return value.bind(db);
+    }
+    return value;
   },
 });
