@@ -1,4 +1,4 @@
-import { NextResponse, NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
 
 export const runtime = "nodejs";
@@ -6,9 +6,9 @@ export const runtime = "nodejs";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 5;
 const SESSION_EXPIRES_IN_MS = SESSION_MAX_AGE_SECONDS * 1000;
 
-type SessionCookieSameSite = "lax" | "strict" | "none";
+type SameSite = "lax" | "strict" | "none";
 
-function getCookieSameSite(): SessionCookieSameSite {
+function getCookieSameSite(): SameSite {
   const configured = process.env.FIREBASE_COOKIE_SAME_SITE?.toLowerCase();
 
   if (
@@ -90,10 +90,10 @@ export async function POST(request: NextRequest) {
 
   if (email) {
     try {
-      const adminDb = getAdminDb();
-      const profilesRef = adminDb.collection("profiles");
+      const db = getAdminDb();
+      const profiles = db.collection("profiles");
 
-      const snapshot = await profilesRef
+      const snapshot = await profiles
         .where("email", "==", email.toLowerCase())
         .get();
 
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
           const data = existingDoc.data();
           data.id = uid;
 
-          await profilesRef.doc(uid).set(data);
+          await profiles.doc(uid).set(data);
           await existingDoc.ref.delete();
         }
       }
@@ -150,8 +150,8 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE() {
-  const response = NextResponse.json({ status: "success" });
   const sameSite = getCookieSameSite();
+  const response = NextResponse.json({ status: "success" });
 
   response.cookies.set({
     name: "firebase_session",

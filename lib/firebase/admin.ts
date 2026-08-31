@@ -14,16 +14,29 @@ function normalizePrivateKey(value: string): string {
 
 function getAdminApp(): App {
   if (app) return app;
-  if (getApps().length > 0) {
-    app = getApps()[0];
-    return app;
-  }
 
   const projectId = process.env.FIREBASE_PROJECT_ID?.trim();
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
   const privateKey = process.env.FIREBASE_PRIVATE_KEY
     ? normalizePrivateKey(process.env.FIREBASE_PRIVATE_KEY)
     : undefined;
+
+  const missing = [
+    !projectId && "FIREBASE_PROJECT_ID",
+    !clientEmail && "FIREBASE_CLIENT_EMAIL",
+    !privateKey && "FIREBASE_PRIVATE_KEY",
+  ].filter(Boolean) as string[];
+
+  if (privateKey && !privateKey.includes("BEGIN PRIVATE KEY")) {
+    throw new Error(
+      "FIREBASE_PRIVATE_KEY is present but is not a valid PEM private key."
+    );
+  }
+
+  if (getApps().length > 0) {
+    app = getApps()[0];
+    return app;
+  }
 
   if (projectId && clientEmail && privateKey) {
     app = initializeApp({
@@ -33,10 +46,12 @@ function getAdminApp(): App {
         privateKey,
       }),
     });
+  } else if (projectId) {
+    app = initializeApp({ projectId });
   } else {
-    app = initializeApp({
-      projectId: projectId || "cfd-treats-hub",
-    });
+    throw new Error(
+      `Firebase Admin configuration is incomplete. Missing: ${missing.join(", ")}.`
+    );
   }
 
   return app;
