@@ -9,7 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@vercel/analytics": "^2.0.1",
     "clsx": "^2.1.1",
     "dotenv": "^17.4.2",
     "firebase": "^12.18.0",
