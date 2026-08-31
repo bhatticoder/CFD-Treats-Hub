@@ -65,6 +65,14 @@ export async function proxyAction(
 }
 
 export async function proxyAuthAction(action: string) {
-  // Just mock auth actions for now if they are used on client (e.g. signOut).
+  if (action === "signOut") {
+    try {
+      const { cookies } = await import("next/headers");
+      const store = await cookies();
+      store.set("firebase_session", "", { maxAge: 0, path: "/" });
+    } catch (e) {
+      console.error("Failed to clear session cookie:", e);
+    }
+  }
   return { error: null };
 }

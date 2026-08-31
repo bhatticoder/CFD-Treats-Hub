@@ -128,9 +128,13 @@ function VerifyContent() {
         body: JSON.stringify({ idToken }),
       });
 
-      if (!res.ok) throw new Error("Failed to create secure session");
-      
-      const { needsRegistration } = await res.json();
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        const msg = body?.error || body?.message || `Session endpoint returned ${res.status}`;
+        throw new Error(msg);
+      }
+
+      const { needsRegistration } = body;
 
       router.replace(needsRegistration ? "/register" : "/");
     } catch (err: unknown) {

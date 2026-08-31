@@ -13,7 +13,9 @@ export async function POST(request: NextRequest) {
 
     // Verify token
     const adminAuth = getAdminAuth();
+    console.log("[session] verifying idToken...");
     const decodedToken = await adminAuth.verifyIdToken(idToken);
+    console.log("[session] idToken verified for uid:", decodedToken.uid);
     const { uid, email } = decodedToken;
 
     let needsRegistration = true;
@@ -43,9 +45,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Create session cookie
+    console.log("[session] creating session cookie...");
     const sessionCookie = await adminAuth.createSessionCookie(idToken, {
       expiresIn
     });
+    console.log("[session] session cookie created");
 
     const options = {
       name: "firebase_session",
@@ -66,11 +70,17 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     console.error("Session error details:", error);
+    console.error("Session error stack:", error instanceof Error ? error.stack : "no stack");
+    console.error("Firebase env present:", {
+      projectId: !!process.env.FIREBASE_PROJECT_ID,
+      clientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: !!process.env.FIREBASE_PRIVATE_KEY,
+    });
 
-    // Return detailed error (remove in production)
     return NextResponse.json({
-      error: error instanceof Error ? error.message : "Unauthorized request"
-    }, { status: 500 }); // Change to 500 for debugging
+      error: error instanceof Error ? error.message : "Unauthorized request",
+      stage: "session_creation",
+    }, { status: 500 });
   }
 }
 

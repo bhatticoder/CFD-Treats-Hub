@@ -144,7 +144,17 @@ class ClientQueryBuilder {
       invoke: async (name: string, options: any): Promise<{ data: any; error: any }> => ({ data: null, error: null })
     },
     auth: {
-       signOut: async () => proxyAuthAction("signOut")
+       signOut: async () => {
+         // Sign out of Firebase client SDK (clears local auth state)
+         try {
+           const { firebaseAuth } = await import("@/lib/firebase/config");
+           await firebaseAuth.signOut();
+         } catch (e) {
+           console.error("Firebase client signOut failed:", e);
+         }
+         // Clear the server-side session cookie
+         return proxyAuthAction("signOut");
+       }
     }
   };
 };
