@@ -143,7 +143,11 @@ function VerifyContent() {
       if (e.code === "auth/invalid-action-code" || e.code === "auth/expired-action-code") {
         setStatus("expired");
       } else {
-        setError(`Error [${e.code ?? "unknown"}]: ${e.message ?? "Could not verify your link. Please request a new one."}`);
+        setError(
+          e.message === "Authentication service unavailable"
+            ? "The link was accepted, but the server session could not be created. Check the Firebase Admin configuration in the server logs."
+            : `Error [${e.code ?? "unknown"}]: ${e.message ?? "Could not verify your link. Please request a new one."}`
+        );
         setStatus("error");
       }
     }

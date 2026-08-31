@@ -21,10 +21,18 @@ function getAdminApp(): App {
     ? normalizePrivateKey(process.env.FIREBASE_PRIVATE_KEY)
     : undefined;
 
-  if (!projectId || !clientEmail || !privateKey) {
-    throw new Error(
-      "Firebase Admin configuration is incomplete. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY."
-    );
+  const missing = [
+    !projectId && "FIREBASE_PROJECT_ID",
+    !clientEmail && "FIREBASE_CLIENT_EMAIL",
+    !privateKey && "FIREBASE_PRIVATE_KEY",
+  ].filter(Boolean) as string[];
+
+  if (missing.length > 0) {
+    throw new Error(`Firebase Admin configuration is incomplete. Missing: ${missing.join(", ")}.`);
+  }
+
+  if (!privateKey || !privateKey.includes("BEGIN PRIVATE KEY")) {
+    throw new Error("FIREBASE_PRIVATE_KEY is present but is not a valid PEM private key.");
   }
 
   app = getApps()[0] ?? initializeApp({

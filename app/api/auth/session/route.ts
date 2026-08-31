@@ -1,6 +1,8 @@
 import { NextResponse, NextRequest } from "next/server";
 import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
 
+export const runtime = "nodejs";
+
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 5;
 const SESSION_EXPIRES_IN_MS = SESSION_MAX_AGE_SECONDS * 1000;
 
