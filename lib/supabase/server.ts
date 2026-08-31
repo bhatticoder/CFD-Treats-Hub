@@ -1,4 +1,4 @@
-import { adminDb, adminAuth } from "@/lib/firebase/admin";
+import { getAdminDb, getAdminAuth } from "@/lib/firebase/admin";
 import { currentUser } from "@/lib/db/server-helpers";
 
 class QueryBuilder {
@@ -110,7 +110,7 @@ class QueryBuilder {
         
         if (table === "order_items") {
           // 1-to-many relationship
-          const itemsQuery = await adminDb.collection("order_items").where("order_id", "==", row.id).get();
+          const itemsQuery = await getAdminDb().collection("order_items").where("order_id", "==", row.id).get();
           row.order_items = itemsQuery.docs.map(d => ({ id: d.id, ...d.data() }));
           continue;
         }
@@ -121,7 +121,7 @@ class QueryBuilder {
         else if (table === "restaurants" && row.restaurant_id) fk = row.restaurant_id;
         
         if (fk) {
-          const doc = await adminDb.collection(table).doc(fk).get();
+          const doc = await getAdminDb().collection(table).doc(fk).get();
           if (doc.exists) {
             row[table] = { id: doc.id, ...doc.data() };
           } else {
@@ -143,12 +143,12 @@ class QueryBuilder {
   private async execute() {
     try {
       if (this.action === 'insert') {
-        const batch = adminDb.batch();
+        const batch = getAdminDb().batch();
         const isArray = Array.isArray(this.payload);
         const arr = isArray ? this.payload : [this.payload];
         const results = [];
         for (const item of arr) {
-          const ref = item.id ? adminDb.collection(this.table).doc(item.id.toString()) : adminDb.collection(this.table).doc();
+          const ref = item.id ? getAdminDb().collection(this.table).doc(item.id.toString()) : getAdminDb().collection(this.table).doc();
           batch.set(ref, { ...item, id: ref.id });
           results.push({ ...item, id: ref.id });
         }
@@ -156,12 +156,12 @@ class QueryBuilder {
         return { data: isArray ? results : results[0], error: null };
       }
 
-      let query: any = adminDb.collection(this.table);
+      let query: any = getAdminDb().collection(this.table);
 
       // Handle 'in' chunks for Firebase limits
       const inCondition = this.conditions.find(c => c.operator === 'in');
       if (inCondition && inCondition.value.length > 10) {
-          query = adminDb.collection(this.table);
+          query = getAdminDb().collection(this.table);
           this.conditions = this.conditions.filter(c => c.operator !== 'in');
       }
 
@@ -173,7 +173,7 @@ class QueryBuilder {
 
       if (this.action === 'delete') {
         const snapshot = await query.get();
-        const batch = adminDb.batch();
+        const batch = getAdminDb().batch();
         snapshot.docs.forEach((doc: any) => batch.delete(doc.ref));
         await batch.commit();
         return { data: null, error: null };
@@ -181,7 +181,7 @@ class QueryBuilder {
 
       if (this.action === 'update') {
         const snapshot = await query.get();
-        const batch = adminDb.batch();
+        const batch = getAdminDb().batch();
         snapshot.docs.forEach((doc: any) => batch.update(doc.ref, this.payload));
         await batch.commit();
         return { data: null, error: null };

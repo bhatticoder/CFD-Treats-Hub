@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { currentUser } from "@/lib/db/server-helpers";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const profileDoc = await adminDb.collection("profiles").doc(user.id).get();
+    const profileDoc = await getAdminDb().collection("profiles").doc(user.id).get();
     const profile = profileDoc.data();
 
     if (!profile || profile.role !== "admin") {
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "campusId required" }, { status: 400 });
     }
 
-    await adminDb.collection("campuses").doc(campusId).update({
+    await getAdminDb().collection("campuses").doc(campusId).update({
       manager_shift_control_enabled: Boolean(enabled)
     });
 

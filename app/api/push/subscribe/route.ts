@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { currentUser } from "@/lib/db/server-helpers";
 
 export async function POST(req: Request) {
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     const endpointHash = crypto.createHash('md5').update(subscription.endpoint).digest('hex');
     const docId = `${user.id}_${endpointHash}`;
 
-    await adminDb.collection("push_subscriptions").doc(docId).set({
+    await getAdminDb().collection("push_subscriptions").doc(docId).set({
       user_id: user.id,
       endpoint: subscription.endpoint,
       p256dh: subscription.keys.p256dh,

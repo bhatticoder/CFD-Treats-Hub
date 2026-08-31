@@ -1,6 +1,6 @@
 import webpush from "web-push";
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { currentUser } from "@/lib/db/server-helpers";
 
 
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
 
     // If campusId and role are provided, fetch those users
     if (campusId && role) {
-      const profilesSnapshot = await adminDb.collection("profiles")
+      const profilesSnapshot = await getAdminDb().collection("profiles")
         .where("campus_id", "==", campusId)
         .where("role", "==", role)
         .get();
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     let subs: any[] = [];
     for (let i = 0; i < targetUserIds.length; i += 10) {
       const chunk = targetUserIds.slice(i, i + 10);
-      const subsSnapshot = await adminDb.collection("push_subscriptions")
+      const subsSnapshot = await getAdminDb().collection("push_subscriptions")
         .where("user_id", "in", chunk)
         .get();
       subsSnapshot.docs.forEach(d => subs.push({ id: d.id, ...d.data() }));
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
     });
 
     let successCount = 0;
-    const batch = adminDb.batch();
+    const batch = getAdminDb().batch();
     let deletions = 0;
 
     for (const sub of subs) {
@@ -86,7 +86,7 @@ export async function POST(req: Request) {
         console.error("Error sending push to", sub.endpoint, err);
         // If subscription is invalid/expired (410 or 404), remove it
         if (err.statusCode === 410 || err.statusCode === 404) {
-           batch.delete(adminDb.collection("push_subscriptions").doc(sub.id));
+           batch.delete(getAdminDb().collection("push_subscriptions").doc(sub.id));
            deletions++;
         }
       }

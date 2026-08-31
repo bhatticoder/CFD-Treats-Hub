@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from "next/server";
-import { adminAuth, adminDb } from "@/lib/firebase/admin";
+import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,6 +12,7 @@ export async function POST(request: NextRequest) {
     const expiresIn = 60 * 60 * 24 * 5 * 1000;
 
     // Verify token
+    const adminAuth = getAdminAuth();
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     const { uid, email } = decodedToken;
 
@@ -19,6 +20,7 @@ export async function POST(request: NextRequest) {
 
     if (email) {
       try {
+        const adminDb = getAdminDb();
         const profilesRef = adminDb.collection("profiles");
         const q = profilesRef.where("email", "==", email.toLowerCase());
         const snapshot = await q.get();

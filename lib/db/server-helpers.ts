@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { cookies } from "next/headers";
-import { adminAuth, adminDb } from "@/lib/firebase/admin";
+import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
 import type { Campus, Profile } from "@/lib/types/models";
 
 // `cache()` dedupes within a single request/render.
@@ -13,7 +13,7 @@ export const currentUser = cache(async () => {
   if (!sessionCookie) return null;
 
   try {
-    const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
+    const decodedClaims = await getAdminAuth().verifySessionCookie(sessionCookie, true);
     return {
       id: decodedClaims.uid,
       email: decodedClaims.email,
@@ -31,14 +31,14 @@ export const myProfileWithCampus = cache(async (): Promise<
   if (!user) return null;
 
   try {
-    const profileDoc = await adminDb.collection("profiles").doc(user.id).get();
+    const profileDoc = await getAdminDb().collection("profiles").doc(user.id).get();
     if (!profileDoc.exists) return null;
 
     const profile = profileDoc.data() as Profile;
 
     let campus: Campus | null = null;
     if (profile.campus_id) {
-      const campusDoc = await adminDb.collection("campuses").doc(profile.campus_id).get();
+      const campusDoc = await getAdminDb().collection("campuses").doc(profile.campus_id).get();
       if (campusDoc.exists) {
         campus = { id: campusDoc.id, ...campusDoc.data() } as Campus;
       }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { adminAuth, adminDb } from "@/lib/firebase/admin";
+import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
 import { myProfile } from "@/lib/db/server-helpers";
 import crypto from "crypto";
 
@@ -17,6 +17,7 @@ export async function POST(request: Request) {
     }
 
     // Check if profile exists
+    const adminDb = getAdminDb();
     const profilesRef = adminDb.collection("profiles");
     const snapshot = await profilesRef.where("email", "==", email.toLowerCase()).get();
 
@@ -25,6 +26,7 @@ export async function POST(request: Request) {
     }
 
     let userRecord;
+    const adminAuth = getAdminAuth();
     try {
       userRecord = await adminAuth.getUserByEmail(email.toLowerCase());
     } catch (e: any) {

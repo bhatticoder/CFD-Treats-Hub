@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { currentUser } from "@/lib/db/server-helpers";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const itemIds: string[] = body.itemIds || [];
 
-    const profileDoc = await adminDb.collection("profiles").doc(user.id).get();
+    const profileDoc = await getAdminDb().collection("profiles").doc(user.id).get();
     const profile = profileDoc.data();
 
     if (!profile) return NextResponse.json({ error: "Profile not found" }, { status: 404 });
@@ -22,14 +22,14 @@ export async function POST(req: Request) {
 
     if (!campusId) {
       // Auto-heal missing profile campus_id
-      const activeCampusesSnapshot = await adminDb.collection("campuses").where("is_active", "==", true).limit(1).get();
+      const activeCampusesSnapshot = await getAdminDb().collection("campuses").where("is_active", "==", true).limit(1).get();
       if (!activeCampusesSnapshot.empty) {
         campus = { id: activeCampusesSnapshot.docs[0].id, ...activeCampusesSnapshot.docs[0].data() };
         campusId = campus.id;
-        await adminDb.collection("profiles").doc(user.id).update({ campus_id: campusId });
+        await getAdminDb().collection("profiles").doc(user.id).update({ campus_id: campusId });
       }
     } else {
-      const campusDoc = await adminDb.collection("campuses").doc(campusId).get();
+      const campusDoc = await getAdminDb().collection("campuses").doc(campusId).get();
       if (campusDoc.exists) {
         campus = { id: campusDoc.id, ...campusDoc.data() };
       }
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
 
     let vouchers: any[] = [];
     if (campusId) {
-      const vSnapshot = await adminDb.collection("vouchers")
+      const vSnapshot = await getAdminDb().collection("vouchers")
         .where("campus_id", "==", campusId)
         .where("is_active", "==", true)
         .get();
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
       const chunks = [];
       for (let i = 0; i < itemIds.length; i += 10) chunks.push(itemIds.slice(i, i + 10));
       for (const chunk of chunks) {
-        const iSnapshot = await adminDb.collection("items").where("id", "in", chunk).get();
+        const iSnapshot = await getAdminDb().collection("items").where("id", "in", chunk).get();
         iSnapshot.docs.forEach(d => freshItems.push({ id: d.id, ...d.data() }));
       }
     }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { currentUser } from "@/lib/db/server-helpers";
 import type { Item, Voucher } from "@/lib/types/models";
 
@@ -26,14 +26,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Order must contain items" }, { status: 400 });
     }
 
-    const profileDoc = await adminDb.collection("profiles").doc(user.id).get();
+    const profileDoc = await getAdminDb().collection("profiles").doc(user.id).get();
     const profile = profileDoc.data();
     if (!profile) return NextResponse.json({ error: "Profile not found" }, { status: 400 });
     const campusId = profile.campus_id;
 
     if (!campusId) return NextResponse.json({ error: "User is not assigned to a campus" }, { status: 400 });
 
-    const campusDoc = await adminDb.collection("campuses").doc(campusId).get();
+    const campusDoc = await getAdminDb().collection("campuses").doc(campusId).get();
     const campus = campusDoc.data();
     if (!campus) return NextResponse.json({ error: "Campus not found" }, { status: 400 });
 
@@ -42,10 +42,10 @@ export async function POST(req: Request) {
     }
 
     // Process order in a transaction to ensure stock is updated safely
-    const result = await adminDb.runTransaction(async (t) => {
+    const result = await getAdminDb().runTransaction(async (t) => {
       // 1. Fetch Items
       const itemDocs = await Promise.all(
-        p_items.map((line: any) => t.get(adminDb.collection("items").doc(line.item_id)))
+        p_items.map((line: any) => t.get(getAdminDb().collection("items").doc(line.item_id)))
       );
 
       const items: Item[] = itemDocs.map((doc, idx) => {
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
       let discountAmount = 0;
       if (p_promo_code) {
         const vQuery = await t.get(
-          adminDb.collection("vouchers")
+          getAdminDb().collection("vouchers")
             .where("campus_id", "==", campusId)
             .where("code", "==", p_promo_code)
             .where("is_active", "==", true)
@@ -108,7 +108,7 @@ export async function POST(req: Request) {
       // Find highest order number for today
       const now = new Date();
       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-      const ordersRef = adminDb.collection("orders");
+      const ordersRef = getAdminDb().collection("orders");
       
       // We can't query and sort cleanly in transaction if we haven't read yet, 
       // but order numbers can just be a random short ID or timestamp based for safety
@@ -125,7 +125,7 @@ export async function POST(req: Request) {
 
       // 6. Create Order Items structure (embedded)
       const orderItems = p_items.map((line: any, i: number) => ({
-        id: adminDb.collection("order_items").doc().id, // Generate an ID just in case
+        id: getAdminDb().collection("order_items").doc().id, // Generate an ID just in case
         item_id: items[i].id,
         name: items[i].name,
         quantity: line.quantity,
@@ -139,7 +139,7 @@ export async function POST(req: Request) {
         }
       }));
 
-      const orderRef = adminDb.collection("orders").doc();
+      const orderRef = getAdminDb().collection("orders").doc();
       const newOrder = {
         id: orderRef.id,
         order_number: `ORD-${orderNumber}`,
@@ -180,7 +180,7 @@ export async function POST(req: Request) {
       // To mimic the previous DB behavior, we also save order_items to a separate collection
       // but it's redundant. We'll do it to avoid breaking other views.
       for (const oi of orderItems) {
-         t.set(adminDb.collection("order_items").doc(oi.id), {
+         t.set(getAdminDb().collection("order_items").doc(oi.id), {
            ...oi,
            order_id: orderRef.id
          });

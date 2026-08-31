@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     // Perform a tiny query to wake up/keep alive the Vercel function and Firestore connection
-    const snapshot = await adminDb.collection("campuses").limit(1).get();
+    const snapshot = await getAdminDb().collection("campuses").limit(1).get();
 
     return NextResponse.json({
       success: true,

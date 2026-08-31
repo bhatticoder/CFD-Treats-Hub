@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { currentUser } from "@/lib/db/server-helpers";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     const { campusId, shiftActive } = await req.json();
 
     // Verify user is manager or admin
-    const profileDoc = await adminDb.collection("profiles").doc(user.id).get();
+    const profileDoc = await getAdminDb().collection("profiles").doc(user.id).get();
     const profile = profileDoc.data();
 
     if (!profile || (profile.role !== "admin" && profile.role !== "manager")) {
@@ -29,13 +29,13 @@ export async function POST(req: Request) {
         throw new Error("Not authorized to update this campus");
       }
       
-      await adminDb.collection("campuses").doc(campusId).update({ shift_active: value });
+      await getAdminDb().collection("campuses").doc(campusId).update({ shift_active: value });
     } else {
       // Update all campuses (Admin only)
       if (profile.role !== "admin") throw new Error("Only admins can update all campuses");
       
-      const campusesSnapshot = await adminDb.collection("campuses").where("is_active", "==", true).get();
-      const batch = adminDb.batch();
+      const campusesSnapshot = await getAdminDb().collection("campuses").where("is_active", "==", true).get();
+      const batch = getAdminDb().batch();
       campusesSnapshot.docs.forEach(doc => {
         batch.update(doc.ref, { shift_active: value });
       });
