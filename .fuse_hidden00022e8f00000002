@@ -1,0 +1,224 @@
+[debug] [2026-08-31T17:23:01.348Z] ----------------------------------------------------------------------
+[debug] [2026-08-31T17:23:01.353Z] Command:       /usr/bin/node-22 /run/media/bhatti/New Volume/Projects/CFD Treats/CFD-Hostel-Treats/node_modules/.bin/firebase deploy --only hosting --project cfd-treats-hub
+[debug] [2026-08-31T17:23:01.354Z] CLI Version:   15.28.2
+[debug] [2026-08-31T17:23:01.354Z] Platform:      linux
+[debug] [2026-08-31T17:23:01.355Z] Node Version:  v22.23.1
+[debug] [2026-08-31T17:23:01.355Z] Detected Agent: antigravity
+[debug] [2026-08-31T17:23:01.355Z] Time:          Mon Aug 31 2026 22:23:01 GMT+0500 (Pakistan Standard Time)
+[debug] [2026-08-31T17:23:01.355Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-08-31T17:23:34.194Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-08-31T17:23:34.194Z] > authorizing via signed-in user (mudasarbhatti191@gmail.com)
+[debug] [2026-08-31T17:23:34.194Z] [iam] checking project cfd-treats-hub for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2026-08-31T17:23:34.222Z] Checked if tokens are valid: false, expires at: 1788178307164
+[debug] [2026-08-31T17:23:34.222Z] Checked if tokens are valid: false, expires at: 1788178307164
+[debug] [2026-08-31T17:23:34.222Z] > refreshing access token with scopes: []
+[debug] [2026-08-31T17:23:34.226Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-08-31T17:23:34.226Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-08-31T17:23:34.817Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-08-31T17:23:34.818Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-08-31T17:23:34.828Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/cfd-treats-hub:testIamPermissions [none]
+[debug] [2026-08-31T17:23:34.829Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/cfd-treats-hub:testIamPermissions  x-goog-user-project=cfd-treats-hub
+[debug] [2026-08-31T17:23:34.829Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/cfd-treats-hub:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-08-31T17:23:36.518Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/cfd-treats-hub:testIamPermissions 200
+[debug] [2026-08-31T17:23:36.518Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/cfd-treats-hub:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-08-31T17:23:36.519Z] Checked if tokens are valid: true, expires at: 1788200613818
+[debug] [2026-08-31T17:23:36.519Z] Checked if tokens are valid: true, expires at: 1788200613818
+[debug] [2026-08-31T17:23:36.519Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/cfd-treats-hub [none]
+[debug] [2026-08-31T17:23:37.448Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/cfd-treats-hub 200
+[debug] [2026-08-31T17:23:37.448Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/cfd-treats-hub {"projectId":"cfd-treats-hub","projectNumber":"12722047283","displayName":"CFD Treats Hub","name":"projects/cfd-treats-hub","resources":{"hostingSite":"cfd-treats-hub"},"state":"ACTIVE","labels":{"firebase":"enabled","firebaseworkflows/environment":"production","firebase/storage-default-bucket":"created"},"etag":"1_4dff3908-6be7-4bdc-894b-ec0d9f7956b7"}
+[debug] [2026-08-31T17:23:39.993Z] defaultcredentials: writing to file /home/bhatti/.config/firebase/mudasarbhatti191_gmail_com_application_default_credentials.json
+[debug] [2026-08-31T17:23:39.999Z] Checked if tokens are valid: true, expires at: 1788200613818
+[debug] [2026-08-31T17:23:39.999Z] Checked if tokens are valid: true, expires at: 1788200613818
+[debug] [2026-08-31T17:23:40.000Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/cfd-treats-hub/sites pageToken=&pageSize=10
+[debug] [2026-08-31T17:23:42.262Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/cfd-treats-hub/sites 200
+[debug] [2026-08-31T17:23:42.262Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/cfd-treats-hub/sites {"sites":[{"name":"projects/cfd-treats-hub/sites/cfd-treats-hub","defaultUrl":"https://cfd-treats-hub.web.app","appId":"1:12722047283:web:615f6ac760e523f4e19646","type":"DEFAULT_SITE"},{"name":"projects/cfd-treats-hub/sites/cfd-treats-hub-46e24","defaultUrl":"https://cfd-treats-hub-46e24.web.app","type":"USER_SITE"}]}
+[debug] [2026-08-31T17:23:42.263Z] Checked if tokens are valid: true, expires at: 1788200613818
+[debug] [2026-08-31T17:23:42.263Z] Checked if tokens are valid: true, expires at: 1788200613818
+[debug] [2026-08-31T17:23:42.263Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:12722047283:web:615f6ac760e523f4e19646/config [none]
+[debug] [2026-08-31T17:23:43.566Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:12722047283:web:615f6ac760e523f4e19646/config 200
+[debug] [2026-08-31T17:23:43.566Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:12722047283:web:615f6ac760e523f4e19646/config {"projectId":"cfd-treats-hub","appId":"1:12722047283:web:615f6ac760e523f4e19646","storageBucket":"cfd-treats-hub.firebasestorage.app","apiKey":"AIzaSyAEBSH2NEFtmnCHAPPV_lDaXL8jX5JRObw","authDomain":"cfd-treats-hub.firebaseapp.com","messagingSenderId":"12722047283","measurementId":"G-6FRJ2MT0MV","projectNumber":"12722047283","version":"2"}
+[info] 
+   Thank you for trying our early preview of Next.js support on Firebase Hosting.
+   During the preview, support is best-effort and breaking changes can be expected. Proceed with caution.
+   The integration is known to work with Next.js version 12 - 16.0. You may encounter errors.
+
+   Documentation: https://firebase.google.com/docs/hosting/frameworks/nextjs
+   File a bug: https://github.com/firebase/firebase-tools/issues/new?template=bug_report.md
+   Submit a feature request: https://github.com/firebase/firebase-tools/issues/new?template=feature_request.md
+
+   We'd love to learn from you. Express your interest in helping us shape the future of Firebase Hosting: https://goo.gle/41enW5X
+
+[debug] [2026-08-31T17:23:50.351Z] Checked if tokens are valid: true, expires at: 1788200613818
+[debug] [2026-08-31T17:23:50.352Z] Checked if tokens are valid: true, expires at: 1788200613818
+[debug] [2026-08-31T17:23:50.352Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/cfd-treats-hub/sites/cfd-treats-hub [none]
+[debug] [2026-08-31T17:23:52.127Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/cfd-treats-hub/sites/cfd-treats-hub 200
+[debug] [2026-08-31T17:23:52.127Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/cfd-treats-hub/sites/cfd-treats-hub {"name":"projects/cfd-treats-hub/sites/cfd-treats-hub","defaultUrl":"https://cfd-treats-hub.web.app","appId":"1:12722047283:web:615f6ac760e523f4e19646","type":"DEFAULT_SITE"}
+[info] ▲ Next.js 16.3.3 (Turbopack)
+
+[info] - Environments: .env.local
+
+[info] ✓ Running next.config.ts took 2.5s
+
+[info] 
+
+[info]   Creating an optimized production build ...
+
+[info] ✓ Compiled successfully in 3.1min
+
+[info]   Running TypeScript ...
+
+[info]   Finished TypeScript in 32.2s ...
+
+[info]   Collecting page data using 3 workers ...
+
+[info]   Generating static pages using 3 workers (0/18) ...
+
+[info]   Generating static pages using 3 workers (4/18) 
+
+[info]   Generating static pages using 3 workers (8/18) 
+
+[info]   Generating static pages using 3 workers (13/18) 
+
+[info] ✓ Generating static pages using 3 workers (18/18) in 11.6s
+
+[info]   Finalizing page optimization ...
+
+[info] 
+
+[info] Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /admin
+├ ƒ /admin/audit
+├ ƒ /admin/branding
+├ ƒ /admin/campuses
+├ ƒ /admin/categories
+├ ƒ /admin/charges
+├ ƒ /admin/contact
+├ ƒ /admin/discounts
+├ ƒ /admin/inventory
+├ ƒ /admin/managers
+├ ƒ /admin/orders
+├ ƒ /admin/preorders
+├ ƒ /admin/reports
+├ ƒ /admin/restaurants
+├ ƒ /admin/shift
+├ ƒ /admin/users
+├ ƒ /admin/vouchers
+├ ƒ /api/admin/create-manager
+├ ƒ /api/auth/session
+├ ƒ /api/cart/data
+├ ƒ /api/order/place
+├ ƒ /api/order/rate
+├ ƒ /api/push/send
+├ ƒ /api/push/subscribe
+├ ƒ /api/shift
+├ ƒ /api/shift-control
+├ ○ /apple-icon.png
+├ ƒ /cart
+├ ○ /firebase-test
+├ ○ /icon.png
+├ ○ /login
+├ ƒ /manager
+├ ƒ /manager/discounts
+├ ƒ /manager/end-shift
+├ ƒ /manager/notify
+├ ƒ /manager/orders/[id]
+├ ƒ /notifications
+├ ƒ /orders
+├ ƒ /preorder
+├ ƒ /profile
+├ ○ /register
+├ ƒ /track/[id]
+└ ○ /verify
+
+
+ƒ Proxy (Middleware)
+
+[info] 
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+[info] Building a Cloud Function to run this application. This is needed due to:
+[info]  • middleware
+[info]  • non-static component /(admin)/admin/audit/page
+[info]  • non-static component /(admin)/admin/branding/page
+[info]  • non-static component /(admin)/admin/campuses/page
+[info]  • non-static component /(admin)/admin/categories/page
+[debug] [2026-08-31T17:29:02.825Z]  • non-static component /(admin)/admin/charges/page
+[debug] [2026-08-31T17:29:02.825Z]  • non-static component /(admin)/admin/contact/page
+[debug] [2026-08-31T17:29:02.825Z]  • non-static component /(admin)/admin/discounts/page
+[debug] [2026-08-31T17:29:02.825Z]  • non-static component /(admin)/admin/inventory/page
+[debug] [2026-08-31T17:29:02.825Z]  • non-static component /(admin)/admin/managers/page
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /(admin)/admin/orders/page
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /(admin)/admin/page
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /(admin)/admin/preorders/page
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /(admin)/admin/reports/page
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /(admin)/admin/restaurants/page
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /(admin)/admin/shift/page
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /(admin)/admin/users/page
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /(admin)/admin/vouchers/page
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /(manager)/manager/discounts/page
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /(manager)/manager/end-shift/page
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /(manager)/manager/notify/page
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /(manager)/manager/orders/[id]/page
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /(manager)/manager/page
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /(shop)/cart/page
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /(shop)/notifications/page
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /(shop)/orders/page
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /(shop)/page
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /(shop)/preorder/page
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /(shop)/profile/page
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /(shop)/track/[id]/page
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /api/admin/create-manager/route
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /api/auth/session/route
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /api/cart/data/route
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /api/order/place/route
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /api/order/rate/route
+[debug] [2026-08-31T17:29:02.826Z]  • non-static component /api/push/send/route
+[debug] [2026-08-31T17:29:02.827Z]  • non-static component /api/push/subscribe/route
+[debug] [2026-08-31T17:29:02.827Z]  • non-static component /api/shift-control/route
+[debug] [2026-08-31T17:29:02.827Z]  • non-static component /api/shift/route
+[info]  • and 34 other reasons, use --debug to see more
+[info] 
+[debug] [2026-08-31T17:29:04.384Z] skipping /_global-error due to it matching an unsupported rewrite/redirect/header or middlware
+[debug] [2026-08-31T17:29:04.385Z] skipping /_not-found due to it matching an unsupported rewrite/redirect/header or middlware
+[debug] [2026-08-31T17:29:04.385Z] skipping /firebase-test due to it matching an unsupported rewrite/redirect/header or middlware
+[debug] [2026-08-31T17:29:04.386Z] skipping /login due to it matching an unsupported rewrite/redirect/header or middlware
+[debug] [2026-08-31T17:29:04.386Z] skipping /register due to it matching an unsupported rewrite/redirect/header or middlware
+[debug] [2026-08-31T17:29:04.386Z] skipping /verify due to it matching an unsupported rewrite/redirect/header or middlware
+[debug] [2026-08-31T17:29:04.386Z] skipping /404 due to it matching an unsupported rewrite/redirect/header or middlware
+[debug] [2026-08-31T17:29:04.386Z] skipping /500 due to it matching an unsupported rewrite/redirect/header or middlware
+[debug] [2026-08-31T17:49:51.728Z] Checked if tokens are valid: true, expires at: 1788200613818
+[debug] [2026-08-31T17:49:51.729Z] Checked if tokens are valid: true, expires at: 1788200613818
+[debug] [2026-08-31T17:49:51.729Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/cfd-treats-hub/sites/cfd-treats-hub [none]
+[debug] [2026-08-31T17:49:54.300Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/cfd-treats-hub/sites/cfd-treats-hub 200
+[debug] [2026-08-31T17:49:54.300Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/cfd-treats-hub/sites/cfd-treats-hub {"name":"projects/cfd-treats-hub/sites/cfd-treats-hub","defaultUrl":"https://cfd-treats-hub.web.app","appId":"1:12722047283:web:615f6ac760e523f4e19646","type":"DEFAULT_SITE"}
+[debug] [2026-08-31T18:08:15.964Z] ----------------------------------------------------------------------
+[debug] [2026-08-31T18:08:15.986Z] Command:       /usr/bin/node-22 /run/media/bhatti/New Volume/Projects/CFD Treats/CFD-Hostel-Treats/node_modules/.bin/firebase functions:log
+[debug] [2026-08-31T18:08:15.991Z] CLI Version:   15.28.2
+[debug] [2026-08-31T18:08:15.993Z] Platform:      linux
+[debug] [2026-08-31T18:08:15.994Z] Node Version:  v22.23.1
+[debug] [2026-08-31T18:08:15.996Z] Detected Agent: antigravity
+[debug] [2026-08-31T18:08:15.997Z] Time:          Mon Aug 31 2026 23:08:15 GMT+0500 (Pakistan Standard Time)
+[debug] [2026-08-31T18:08:16.000Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-08-31T18:08:18.814Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-08-31T18:08:18.816Z] > authorizing via signed-in user (mudasarbhatti191@gmail.com)
+[debug] [2026-08-31T18:08:18.817Z] [iam] checking project cfd-treats-hub for permissions ["firebase.projects.get","logging.logEntries.list","logging.logs.list"]
+[debug] [2026-08-31T18:08:18.982Z] Checked if tokens are valid: true, expires at: 1788200613818
+[debug] [2026-08-31T18:08:18.983Z] Checked if tokens are valid: true, expires at: 1788200613818
+[debug] [2026-08-31T18:08:18.991Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/cfd-treats-hub:testIamPermissions [none]
+[debug] [2026-08-31T18:08:18.993Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/cfd-treats-hub:testIamPermissions  x-goog-user-project=cfd-treats-hub
+[debug] [2026-08-31T18:08:18.993Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/cfd-treats-hub:testIamPermissions {"permissions":["firebase.projects.get","logging.logEntries.list","logging.logs.list"]}
+[debug] [2026-08-31T18:08:27.887Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/cfd-treats-hub:testIamPermissions 200
+[debug] [2026-08-31T18:08:27.889Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/cfd-treats-hub:testIamPermissions {"permissions":["firebase.projects.get","logging.logEntries.list","logging.logs.list"]}
+[debug] [2026-08-31T18:08:27.895Z] Checked if tokens are valid: true, expires at: 1788200613818
+[debug] [2026-08-31T18:08:27.895Z] Checked if tokens are valid: true, expires at: 1788200613818
+[debug] [2026-08-31T18:08:27.897Z] >>> [apiv2][query] POST https://logging.googleapis.com/v2/entries:list [none]
+[debug] [2026-08-31T18:08:27.897Z] >>> [apiv2][body] POST https://logging.googleapis.com/v2/entries:list {"resourceNames":["projects/cfd-treats-hub"],"filter":"resource.type=\"cloud_function\" OR (resource.type=\"cloud_run_revision\" AND labels.\"goog-managed-by\"=\"cloudfunctions\")","orderBy":"timestamp desc","pageSize":35}
+[debug] [2026-08-31T18:08:38.331Z] *** [apiv2] error from fetch(https://logging.googleapis.com/v2/entries:list, {"headers":{},"method":"POST","body":"{\"resourceNames\":[\"projects/cfd-treats-hub\"],\"filter\":\"resource.type=\\\"cloud_function\\\" OR (resource.type=\\\"cloud_run_revision\\\" AND labels.\\\"goog-managed-by\\\"=\\\"cloudfunctions\\\")\",\"orderBy\":\"timestamp desc\",\"pageSize\":35}"}): ConnectTimeoutError: Connect Timeout Error (attempted addresses: 142.250.203.170:443, 2a00:1450:4019:803::200a:443, timeout: 10000ms)
+[error] 
+[error] Error: Failed to list log entries Failed to retrieve log entries from Google Cloud.
