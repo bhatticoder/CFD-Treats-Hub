@@ -30,10 +30,34 @@ jobs:
           FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
           FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
 
+      - name: Prepare Firebase service account
+        id: firebase_service_account
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+
+          private_key = os.environ["FIREBASE_PRIVATE_KEY"].replace("\\n", "\n")
+          service_account = {
+              "type": "service_account",
+              "project_id": os.environ["FIREBASE_PROJECT_ID"],
+              "private_key": private_key,
+              "client_email": os.environ["FIREBASE_CLIENT_EMAIL"],
+              "token_uri": "https://oauth2.googleapis.com/token",
+          }
+
+          print("json<<EOF")
+          print(json.dumps(service_account))
+          print("EOF")
+          PY
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CFD_TREATS_HUB }}
+          firebaseServiceAccount: ${{ steps.firebase_service_account.outputs.json }}
           channelId: live
           projectId: cfd-treats-hub
         env:
