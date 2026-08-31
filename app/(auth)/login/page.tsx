@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { firebaseAuth } from "@/lib/firebase/config";
+import { getFirebaseAuth } from "@/lib/firebase/config";
 import { sendSignInLinkToEmail } from "firebase/auth";
 import { validateEmail } from "@/lib/domain/validators";
 import { Button } from "@/components/ui/button";
@@ -33,18 +33,33 @@ export default function LoginPage() {
         handleCodeInApp: true,
       };
 
-      await sendSignInLinkToEmail(firebaseAuth, email.trim().toLowerCase(), actionCodeSettings);
+      const normalizedEmail = email.trim().toLowerCase();
+      console.log("[v0] Starting Firebase magic-link sign-in", {
+        emailDomain: normalizedEmail.split("@")[1] ?? "unknown",
+        origin: window.location.origin,
+      });
+      await sendSignInLinkToEmail(getFirebaseAuth(), normalizedEmail, actionCodeSettings);
       
       // Save email and timestamp locally so verify page can auto-fill and enforce expiry
-      window.localStorage.setItem('emailForSignIn', email.trim().toLowerCase());
-      window.localStorage.setItem('magicLinkSentAt', String(Date.now()));
+      window.localStorage.setItem("emailForSignIn", normalizedEmail);
+      window.localStorage.setItem("magicLinkSentAt", String(Date.now()));
       
       setSent(true);
       setLoading(false);
     } catch (err: unknown) {
-      console.error("Login error:", err);
-      const errorObj = err as { message: string };
-      setError(errorObj.message || "Failed to send magic link. Please try again.");
+      const firebaseError = err as { code?: string; message?: string };
+      console.error("[v0] Firebase magic-link sign-in failed", {
+        code: firebaseError.code,
+        message: firebaseError.message,
+      });
+      const messages: Record<string, string> = {
+        "auth/invalid-api-key": "Firebase rejected the Web API key. Verify NEXT_PUBLIC_FIREBASE_API_KEY belongs to the cfd-treats-hub project.",
+        "auth/operation-not-allowed": "Email-link sign-in is disabled in Firebase Authentication. Enable it under Sign-in providers.",
+        "auth/unauthorized-continue-uri": "This preview domain is not authorized in Firebase. Add it under Authentication > Settings > Authorized domains.",
+        "auth/invalid-continue-uri": "Firebase rejected the sign-in redirect URL. Check the authorized domain and Web SDK configuration.",
+        "auth/quota-exceeded": "Firebase email quota has been exceeded. Try again later or check the Firebase billing/quota settings.",
+      };
+      setError(messages[firebaseError.code ?? ""] ?? firebaseError.message ?? "Failed to send magic link. Please try again.");
       setLoading(false);
     }
   }
