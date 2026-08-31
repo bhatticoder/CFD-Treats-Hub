@@ -9,54 +9,66 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing ID token" }, { status: 400 });
     }
 
-    // Set session expiration to 5 days.
     const expiresIn = 60 * 60 * 24 * 5 * 1000;
 
-    // Verify token to get email and uid for migration check
+    // Verify token
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     const { uid, email } = decodedToken;
 
     let needsRegistration = true;
 
     if (email) {
-      // Check if they have an old Supabase profile that needs migrating to the new Firebase UID
-      const profilesRef = adminDb.collection("profiles");
-      const q = profilesRef.where("email", "==", email.toLowerCase());
-      const snapshot = await q.get();
-      
-      if (!snapshot.empty) {
-        needsRegistration = false;
-        const existingDoc = snapshot.docs[0];
-        if (existingDoc.id !== uid) {
-          // Migrate old Supabase profile to the new Firebase UID document
-          const data = existingDoc.data();
-          data.id = uid; 
-          await profilesRef.doc(uid).set(data);
-          await existingDoc.ref.delete();
+      try {
+        const profilesRef = adminDb.collection("profiles");
+        const q = profilesRef.where("email", "==", email.toLowerCase());
+        const snapshot = await q.get();
+
+        if (!snapshot.empty) {
+          needsRegistration = false;
+          const existingDoc = snapshot.docs[0];
+
+          if (existingDoc.id !== uid) {
+            const data = existingDoc.data();
+            data.id = uid;
+            await profilesRef.doc(uid).set(data);
+            await existingDoc.ref.delete();
+          }
         }
+      } catch (dbError) {
+        console.error("Firestore error:", dbError);
+        // Continue even if migration fails
       }
     }
 
-    // Create the session cookie
-    const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
+    // Create session cookie
+    const sessionCookie = await adminAuth.createSessionCookie(idToken, {
+      expiresIn
+    });
 
-    // Set cookie policy for session cookie.
     const options = {
       name: "firebase_session",
       value: sessionCookie,
       maxAge: expiresIn,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
+      sameSite: "lax" as const, // Add this!
       path: "/",
     };
 
-    const response = NextResponse.json({ status: "success", needsRegistration });
+    const response = NextResponse.json({
+      status: "success",
+      needsRegistration
+    });
     response.cookies.set(options);
 
     return response;
   } catch (error) {
-    console.error("Error creating session cookie", error);
-    return NextResponse.json({ error: "Unauthorized request" }, { status: 401 });
+    console.error("Session error details:", error);
+
+    // Return detailed error (remove in production)
+    return NextResponse.json({
+      error: error instanceof Error ? error.message : "Unauthorized request"
+    }, { status: 500 }); // Change to 500 for debugging
   }
 }
 
