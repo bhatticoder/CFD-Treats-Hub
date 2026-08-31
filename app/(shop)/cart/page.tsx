@@ -167,7 +167,8 @@ export default function CartPage() {
     try {
       let screenshotUrl: string | null = null;
       if (method === "online" && file) {
-        const path = `payment-screenshots/${crypto.randomUUID()}-${file.name}`;
+        const ownerUid = (await import("@/lib/firebase/config")).firebaseAuth.currentUser?.uid ?? "anon";
+        const path = `payment-screenshots/${ownerUid}-${crypto.randomUUID()}-${file.name}`;
         const storageRef = ref(firebaseStorage, path);
         await uploadBytes(storageRef, file);
         screenshotUrl = await getDownloadURL(storageRef);

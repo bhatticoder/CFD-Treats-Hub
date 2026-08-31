@@ -1,0 +1,54 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function profileData(uid) {
+      return firestore.get(/databases/(default)/documents/profiles/$(uid)).data;
+    }
+
+    function roleOf(uid) {
+      return signedIn() ? profileData(uid).role : 'none';
+    }
+
+    function isAdmin() {
+      return signedIn() && roleOf(request.auth.uid) == 'admin';
+    }
+
+    function isManager() {
+      return signedIn() && roleOf(request.auth.uid) == 'manager';
+    }
+
+    function isManagerOrHigher() {
+      return isManager() || isAdmin();
+    }
+
+    function isActiveStaff() {
+      return isManagerOrHigher()
+        && profileData(request.auth.uid).is_active == true;
+    }
+
+    // ── item-images: public menu images; upload by active staff ─────────────
+    // Serving URLs (getDownloadURL / plain URLs) are rendered for everyone.
+    match /item-images/{allPaths=**} {
+      allow read: if true;
+      // Uploads come from admin/manager consoles (branding + inventory).
+      allow write: if isActiveStaff();
+    }
+
+    // ── payment-screenshots: private; owner or staff only ──────────────────
+    // Files are named payment-screenshots/<ownerUid>-<uuid>-<file> so the
+    // uploader can read back their own file (needed for getDownloadURL) but
+    // other customers cannot. Managers/admins read all to verify payment.
+    match /payment-screenshots/{ownerUid}/{allPaths=**} {
+      allow read: if isActiveStaff()
+        || (signedIn() && ownerUid == request.auth.uid);
+      allow write: if signedIn()
+        && (isActiveStaff() || ownerUid == request.auth.uid);
+    }
+  }
+}
