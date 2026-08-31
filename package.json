@@ -25,7 +25,6 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@supabase/supabase-js": "^2.112.4",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -34,7 +33,6 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "firebase-tools": "^15.28.2",
-    "supabase": "^2.114.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

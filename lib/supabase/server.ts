@@ -224,8 +224,40 @@ export const createClient = () => {
   return {
     from: (table: string) => new QueryBuilder(table),
     rpc: async (fn: string, params: any): Promise<{ data: any; error: any }> => {
-       // Mock for rpc calls like start_shift, etc.
-       return { data: null, error: null };
+      try {
+        switch (fn) {
+          case "mark_delivered": {
+            const orderId = params?.p_order_id;
+            if (!orderId) return { data: null, error: { message: "Missing p_order_id" } };
+            await getAdminDb().collection("orders").doc(orderId).update({
+              order_status: "delivered",
+              delivered_at: new Date().toISOString(),
+            });
+            return { data: null, error: null };
+          }
+          case "manager_cancel_order": {
+            const orderId = params?.p_order_id;
+            if (!orderId) return { data: null, error: { message: "Missing p_order_id" } };
+            await getAdminDb().collection("orders").doc(orderId).update({
+              order_status: "cancelled",
+              cancel_reason: params?.p_reason || null,
+            });
+            return { data: null, error: null };
+          }
+          case "manager_set_discount": {
+            const itemId = params?.p_item_id;
+            if (!itemId) return { data: null, error: { message: "Missing p_item_id" } };
+            await getAdminDb().collection("items").doc(itemId).update({
+              discounted_price: params?.p_discounted ?? null,
+            });
+            return { data: null, error: null };
+          }
+          default:
+            return { data: null, error: { message: "RPC not implemented for " + fn } };
+        }
+      } catch (e: any) {
+        return { data: null, error: { message: e.message || String(e) } };
+      }
     },
     auth: {
       getUser: async () => {

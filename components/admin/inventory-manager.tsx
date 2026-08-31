@@ -137,7 +137,8 @@ export function InventoryManager({
           .from("item-images")
           .upload(path, file, { contentType: file.type || "image/jpeg" });
         if (upErr) throw upErr;
-        imageUrl = supabase.storage.from("item-images").getPublicUrl(path).data.publicUrl;
+        const { data: urlData } = await supabase.storage.from("item-images").getPublicUrl(path);
+        imageUrl = urlData.publicUrl;
       }
       const payload = {
         name: draft.name.trim(),

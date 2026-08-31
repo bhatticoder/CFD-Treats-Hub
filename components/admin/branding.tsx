@@ -34,7 +34,8 @@ export function Branding({ campuses }: { campuses: Campus[] }) {
           .from("item-images")
           .upload(path, file, { contentType: file.type || "image/png" });
         if (upErr) throw new Error(upErr.message ?? String(upErr));
-        payload.logo_url = supabase.storage.from("item-images").getPublicUrl(path).data.publicUrl;
+        const { data: urlData } = await supabase.storage.from("item-images").getPublicUrl(path);
+        payload.logo_url = urlData.publicUrl;
       }
       const { error } = await supabase.from("campuses").update(payload).eq("id", selectedId);
       if (error) throw new Error(error.message ?? String(error));

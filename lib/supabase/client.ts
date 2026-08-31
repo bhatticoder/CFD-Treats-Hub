@@ -1,4 +1,8 @@
 import { proxyAction, proxyAuthAction } from "./action";
+import { firebaseDb } from "@/lib/firebase/config";
+import { doc, updateDoc, onSnapshot } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { firebaseStorage } from "@/lib/firebase/config";
 
 class ClientQueryBuilder {
   constructor(private table: string) {}
@@ -98,7 +102,6 @@ class ClientQueryBuilder {
     return this;
   }
 
-  // Make it awaitable to trigger the server action
   then<TResult1 = any, TResult2 = never>(
     onfulfilled?: ((value: any) => TResult1 | PromiseLike<TResult1>) | undefined | null,
     onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null
@@ -117,27 +120,112 @@ class ClientQueryBuilder {
   }
 }
 
-  export const createClient = () => {
+const channelUnsubscribes = new Map<string, () => void>();
+
+class RealtimeChannel {
+  private _unsubscribe?: () => void;
+  private _callbacks: Array<{ filter: any; callback: any }> = [];
+  private _channelName: string;
+
+  constructor(channelName: string) {
+    this._channelName = channelName;
+  }
+
+  on(event: string, filter: any, callback: any) {
+    this._callbacks.push({ filter, callback });
+    return this;
+  }
+
+  subscribe() {
+    const orderId = this._channelName.replace("order-", "");
+    if (orderId && orderId !== this._channelName) {
+      const orderRef = doc(firebaseDb, "orders", orderId);
+      this._unsubscribe = onSnapshot(orderRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          for (const { callback } of this._callbacks) {
+            callback({ new: { ...data, id: snapshot.id } });
+          }
+        }
+      });
+      channelUnsubscribes.set(this._channelName, this._unsubscribe);
+    }
+    return this;
+  }
+
+  unsubscribe() {
+    this._unsubscribe?.();
+    channelUnsubscribes.delete(this._channelName);
+  }
+}
+
+export const createClient = () => {
   return {
     from: (table: string) => new ClientQueryBuilder(table),
     rpc: async (fn: string, params: any): Promise<{ data: any; error: any }> => {
-      // Mock for client-side rpc calls to prevent crashes.
-      return { data: null, error: null };
+      try {
+        switch (fn) {
+          case "mark_delivered": {
+            const orderId = params?.p_order_id;
+            if (!orderId) return { data: null, error: { message: "Missing p_order_id" } };
+            await updateDoc(doc(firebaseDb, "orders", orderId), {
+              order_status: "delivered",
+              delivered_at: new Date().toISOString(),
+            });
+            return { data: null, error: null };
+          }
+          case "manager_cancel_order": {
+            const orderId = params?.p_order_id;
+            if (!orderId) return { data: null, error: { message: "Missing p_order_id" } };
+            await updateDoc(doc(firebaseDb, "orders", orderId), {
+              order_status: "cancelled",
+              cancel_reason: params?.p_reason || null,
+            });
+            return { data: null, error: null };
+          }
+          case "manager_set_discount": {
+            const itemId = params?.p_item_id;
+            if (!itemId) return { data: null, error: { message: "Missing p_item_id" } };
+            await updateDoc(doc(firebaseDb, "items", itemId), {
+              discounted_price: params?.p_discounted ?? null,
+            });
+            return { data: null, error: null };
+          }
+          default:
+            return { data: null, error: { message: "RPC not implemented for " + fn } };
+        }
+      } catch (e: any) {
+        return { data: null, error: { message: e.message || String(e) } };
+      }
     },
     channel: (name: string) => {
-      return {
-        on: (event: string, filter: any, callback: any) => {
-          return { subscribe: () => {} };
-        },
-        subscribe: () => {},
-        unsubscribe: () => {}
-      };
+      return new RealtimeChannel(name);
     },
-    removeChannel: (channel: any) => {},
+    removeChannel: (channel: any) => {
+      if (channel && typeof channel.unsubscribe === "function") {
+        channel.unsubscribe();
+      }
+    },
     storage: {
       from: (bucket: string) => ({
-         upload: async (path: string, file: any, options: any) => ({ error: null as any }),
-         getPublicUrl: (path: string) => ({ data: { publicUrl: "" } })
+        upload: async (path: string, file: any, options: any) => {
+          try {
+            const storageRef = ref(firebaseStorage, path);
+            await uploadBytes(storageRef, file, options ? { contentType: options.contentType } : undefined);
+            return { error: null as any };
+          } catch (e: any) {
+            return { error: { message: e.message || String(e) } };
+          }
+        },
+        getPublicUrl: async (path: string) => {
+          try {
+            const storageRef = ref(firebaseStorage, path);
+            const url = await getDownloadURL(storageRef);
+            return { data: { publicUrl: url } };
+          } catch (e: any) {
+            return { data: { publicUrl: "" } };
+          }
+        }
       })
     },
     functions: {
@@ -145,14 +233,12 @@ class ClientQueryBuilder {
     },
     auth: {
        signOut: async () => {
-         // Sign out of Firebase client SDK (clears local auth state)
          try {
            const { firebaseAuth } = await import("@/lib/firebase/config");
            await firebaseAuth.signOut();
          } catch (e) {
            console.error("Firebase client signOut failed:", e);
          }
-         // Clear the server-side session cookie
          return proxyAuthAction("signOut");
        }
     }
