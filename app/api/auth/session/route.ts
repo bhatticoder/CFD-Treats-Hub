@@ -1,15 +1,16 @@
-import { NextResponse } from "next/server";
-import { adminAuth } from "@/lib/firebase/admin";
+import { NextResponse, NextRequest } from "next/server";
+import { adminAuth, adminDb } from "@/lib/firebase/admin";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const { idToken } = await request.json();
 
+    if (!idToken) {
+      return NextResponse.json({ error: "Missing ID token" }, { status: 400 });
+    }
+
     // Set session expiration to 5 days.
     const expiresIn = 60 * 60 * 24 * 5 * 1000;
-
-    // Dynamically import adminAuth and adminDb
-    const { adminAuth, adminDb } = await import("@/lib/firebase/admin");
 
     // Verify token to get email and uid for migration check
     const decodedToken = await adminAuth.verifyIdToken(idToken);
