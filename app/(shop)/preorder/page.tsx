@@ -56,7 +56,7 @@ export default async function PreorderPage() {
     .select("name")
     .order("name");
   
-  const allCategories = rawCategories ? rawCategories.map((c) => c.name) : [];
+  const allCategories = rawCategories ? rawCategories.map((c: any) => c.name) : [];
 
   let { data: rawItems } = await supabase
     .from("items")

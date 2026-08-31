@@ -34,14 +34,17 @@ export function ManagersManager({
     if (!email.trim() || !campusId) return setError("Email and campus are required");
     setBusy(true);
     setError(null);
-    const supabase = createClient();
-    // Service-role Edge Function creates the auth user + manager profile.
-    const { data, error } = await supabase.functions.invoke("create-manager", {
-      body: { email: email.trim().toLowerCase(), full_name: name.trim(), phone: phone.trim(), campus_id: campusId },
+    // Call Next.js API route to create manager
+    const res = await fetch("/api/admin/create-manager", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email.trim().toLowerCase(), full_name: name.trim(), phone: phone.trim(), campus_id: campusId }),
     });
+    const data = await res.json();
+
     setBusy(false);
-    if (error || (data && (data as { error?: string }).error)) {
-      return setError((data as { error?: string })?.error ?? error?.message ?? "Failed");
+    if (!res.ok || data.error) {
+      return setError(data.error || "Failed to add manager");
     }
     setOpen(false);
     setName(""); setEmail(""); setPhone(""); setCampusId("");

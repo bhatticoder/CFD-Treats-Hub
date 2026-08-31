@@ -25,7 +25,7 @@ export function ManagerDiscounts({ items }: { items: Item[] }) {
       p_discounted: value,
     });
     setBusy(null);
-    if (error) return setError(error.message);
+    if (error) return setError(error.message || String(error));
     router.refresh();
   }
 

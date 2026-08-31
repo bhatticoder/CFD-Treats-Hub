@@ -1,36 +1,54 @@
 import { cache } from "react";
-import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
+import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import type { Campus, Profile } from "@/lib/types/models";
 
-// `cache()` dedupes within a single request/render: the layout AND the page can
-// both call these and the network work happens only once per navigation.
+// `cache()` dedupes within a single request/render.
 
 /** The current auth user (validated). Cached per request. */
 export const currentUser = cache(async () => {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get("firebase_session")?.value;
+
+  if (!sessionCookie) return null;
+
+  try {
+    const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
+    return {
+      id: decodedClaims.uid,
+      email: decodedClaims.email,
+    };
+  } catch (error) {
+    return null;
+  }
 });
 
-/** The current user's profile joined with its campus, in ONE query. Cached. */
+/** The current user's profile joined with its campus. Cached. */
 export const myProfileWithCampus = cache(async (): Promise<
   (Profile & { campus?: Campus | null }) | null
 > => {
   const user = await currentUser();
   if (!user) return null;
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("profiles")
-    .select("*, campuses(*)")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (!data) return null;
-  const row = data as Profile & { campuses?: Campus | Campus[] | null };
-  const rawCampus = row.campuses;
-  const campus = Array.isArray(rawCampus) ? rawCampus[0] : rawCampus;
-  return { ...row, campus: campus ?? null };
+
+  try {
+    const profileDoc = await adminDb.collection("profiles").doc(user.id).get();
+    if (!profileDoc.exists) return null;
+
+    const profile = profileDoc.data() as Profile;
+
+    let campus: Campus | null = null;
+    if (profile.campus_id) {
+      const campusDoc = await adminDb.collection("campuses").doc(profile.campus_id).get();
+      if (campusDoc.exists) {
+        campus = { id: campusDoc.id, ...campusDoc.data() } as Campus;
+      }
+    }
+
+    return { ...profile, campus };
+  } catch (error) {
+    console.error("Error fetching profile", error);
+    return null;
+  }
 });
 
 /** The current user's profile (server-side). Cached. */

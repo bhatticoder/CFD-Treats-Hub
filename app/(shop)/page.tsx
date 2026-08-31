@@ -43,7 +43,7 @@ export default async function MenuPage() {
     .select("name")
     .order("name");
   
-  const allCategories = rawCategories ? rawCategories.map((c) => c.name) : [];
+  const allCategories = rawCategories ? rawCategories.map((c: any) => c.name) : [];
 
   // Filter out items belonging to hidden restaurants.
   const items = ((rawItems as any[]) ?? []).filter(

@@ -60,7 +60,7 @@ export function OrderTracker({ initial }: { initial: Order }) {
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${initial.id}` },
-        (payload) => setOrder((o) => ({ ...o, ...(payload.new as Order) })),
+        (payload: any) => setOrder((o) => ({ ...o, ...(payload.new as Order) })),
       )
       .subscribe();
 

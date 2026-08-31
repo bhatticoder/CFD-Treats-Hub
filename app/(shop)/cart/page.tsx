@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Minus, Plus, Trash2, Upload, PartyPopper } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { useCart, CART_TTL } from "@/lib/store/cart";
 import { computeTotals, effectivePrice } from "@/lib/domain/pricing";
 import { COD_EXTRA_CHARGE, PLATFORM_FEE } from "@/lib/domain/constants";
@@ -18,6 +17,8 @@ import { Card, CardBody } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/misc";
 import { ShoppingCart } from "lucide-react";
 import Image from "next/image";
+import { firebaseStorage } from "@/lib/firebase/config";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export default function CartPage() {
   const router = useRouter();
@@ -46,70 +47,49 @@ export default function CartPage() {
 
   useEffect(() => {
     (async () => {
-      const supabase = createClient();
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) return;
-      
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("room_number, block, campus_id, campuses(*)")
-        .eq("id", userData.user.id)
-        .maybeSingle();
-
-      if (prof?.room_number) setRoom(prof.room_number);
-      if (prof?.block) setBlock(prof.block);
-
-      let rawCampus = prof?.campuses;
-      let userCampus = (Array.isArray(rawCampus) ? rawCampus[0] : rawCampus) as Campus | null;
-
-      // Auto-heal missing profile campus_id if user doesn't have one set yet
-      if (!prof?.campus_id) {
-        const { data: activeCampuses } = await supabase
-          .from("campuses")
-          .select("*")
-          .eq("is_active", true)
-          .limit(1);
-        if (activeCampuses && activeCampuses.length > 0) {
-          const defaultCampus = activeCampuses[0];
-          await supabase
-            .from("profiles")
-            .update({ campus_id: defaultCampus.id })
-            .eq("id", userData.user.id);
-          userCampus = defaultCampus as Campus;
-        }
-      }
-
-      if (userCampus) setCampus(userCampus);
-      if (userCampus?.name) setCampusName(userCampus.name);
-      if (userCampus?.payment_account_info) setAccount(userCampus.payment_account_info);
-      if (userCampus && userCampus.shift_active === false) {
-        setCampusClosed(true);
-      }
-      if (userCampus?.gender === "Female") {
-        setIsGirlsCampus(true);
-      }
-      if (userCampus?.delivery_active !== undefined) {
-        setDeliveryActive(userCampus.delivery_active);
-      }
-      if (userCampus?.collection_room !== undefined) {
-        setCollectionRoom(userCampus.collection_room);
-      }
-      if (userCampus?.id) {
-        const { data: vData } = await supabase.from("vouchers").select("*").eq("campus_id", userCampus.id).eq("is_active", true);
-        if (vData) setActiveVouchers(vData as Voucher[]);
-      }
-
-      // Bug #12 fix: refresh cart items against the DB if stale
       const cartLines = useCart.getState().lines;
-      if (cartLines.length > 0 && (Date.now() - lastRefreshed > CART_TTL)) {
-        const itemIds = cartLines.map((l) => l.item.id);
-        const { data: freshItems } = await supabase
-          .from("items")
-          .select("*")
-          .in("id", itemIds);
-        if (freshItems) {
-          refreshItems(freshItems);
+      const needsRefresh = cartLines.length > 0 && (Date.now() - lastRefreshed > CART_TTL);
+      const itemIds = needsRefresh ? cartLines.map((l) => l.item.id) : [];
+
+      try {
+        const res = await fetch("/api/cart/data", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ itemIds })
+        });
+        
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        const prof = data.profile;
+        if (prof?.room_number) setRoom(prof.room_number);
+        if (prof?.block) setBlock(prof.block);
+
+        let userCampus = prof?.campuses as Campus | null;
+
+        if (userCampus) setCampus(userCampus);
+        if (userCampus?.name) setCampusName(userCampus.name);
+        if (userCampus?.payment_account_info) setAccount(userCampus.payment_account_info);
+        if (userCampus && userCampus.shift_active === false) {
+          setCampusClosed(true);
         }
+        if (userCampus?.gender === "Female") {
+          setIsGirlsCampus(true);
+        }
+        if (userCampus?.delivery_active !== undefined) {
+          setDeliveryActive(userCampus.delivery_active);
+        }
+        if (userCampus?.collection_room !== undefined) {
+          setCollectionRoom(userCampus.collection_room);
+        }
+
+        if (data.vouchers) setActiveVouchers(data.vouchers);
+        
+        if (data.freshItems && data.freshItems.length > 0) {
+          refreshItems(data.freshItems);
+        }
+      } catch (err) {
+        console.error("Error fetching cart data:", err);
       }
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -183,47 +163,45 @@ export default function CartPage() {
       return setError("Please upload your payment screenshot");
     }
     setPlacing(true);
-    const supabase = createClient();
+    
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      const uid = userData.user!.id;
-
       let screenshotUrl: string | null = null;
       if (method === "online" && file) {
-        const path = `${uid}/${crypto.randomUUID()}.jpg`;
-        const { error: upErr } = await supabase.storage
-          .from("payment-screenshots")
-          .upload(path, file, { contentType: file.type || "image/jpeg" });
-        if (upErr) throw upErr;
-        screenshotUrl = supabase.storage
-          .from("payment-screenshots")
-          .getPublicUrl(path).data.publicUrl;
+        const path = `payment-screenshots/${crypto.randomUUID()}-${file.name}`;
+        const storageRef = ref(firebaseStorage, path);
+        await uploadBytes(storageRef, file);
+        screenshotUrl = await getDownloadURL(storageRef);
       }
 
-      // Dynamic block resolution based on halls
       let finalBlock = block;
       if (campus?.halls && campus.halls.length === 1) {
         finalBlock = campus.halls[0];
       } else if (!finalBlock) {
-        finalBlock = "Main"; // fallback
+        finalBlock = "Main"; 
       }
 
-      // Server prices the order from item_id + quantity only.
-      const rpcName = isPreorder ? "place_preorder" : "place_order";
-      const { data, error } = await supabase.rpc(rpcName, {
-        p_room_number: deliveryActive ? room.trim() : `Pickup: ${collectionRoom || "Counter"}`,
-        p_block: finalBlock,
-        p_payment_method: method,
-        p_payment_screenshot_url: screenshotUrl,
-        p_items: lines.map((l) => ({
-          item_id: l.item.id,
-          quantity: l.quantity,
-        })),
-        p_promo_code: appliedVoucher ? appliedVoucher.code : null,
-        p_additional_note: additionalNote.trim() ? additionalNote.trim() : null,
+      const res = await fetch("/api/order/place", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          p_room_number: deliveryActive ? room.trim() : `Pickup: ${collectionRoom || "Counter"}`,
+          p_block: finalBlock,
+          p_payment_method: method,
+          p_payment_screenshot_url: screenshotUrl,
+          p_items: lines.map((l) => ({
+            item_id: l.item.id,
+            quantity: l.quantity,
+          })),
+          p_promo_code: appliedVoucher ? appliedVoucher.code : null,
+          p_additional_note: additionalNote.trim() ? additionalNote.trim() : null,
+          isPreorder
+        })
       });
-      if (error) throw new Error(error.message ?? String(error));
-      const order = Array.isArray(data) ? data[0] : data;
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to place order");
+
+      const order = data.order;
       
       try {
         fetch("/api/push/send", {
@@ -242,11 +220,7 @@ export default function CartPage() {
       clear();
       router.push(`/track/${order.id}`);
     } catch (e) {
-      // Supabase errors are objects with a `message` property — must extract the string
-      // otherwise React renders [object Object]
-      if (e && typeof e === "object" && "message" in e) {
-        setError((e as { message: string }).message);
-      } else if (e instanceof Error) {
+      if (e instanceof Error) {
         setError(e.message);
       } else {
         setError(String(e));

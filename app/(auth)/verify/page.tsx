@@ -1,120 +1,241 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter } from "next/navigation";
+import { firebaseAuth } from "@/lib/firebase/config";
+import { isSignInWithEmailLink, signInWithEmailLink, getAdditionalUserInfo } from "firebase/auth";
 import { Card, CardBody } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input, Label } from "@/components/ui/input";
+import { Loader2, MailCheck, ShieldAlert, Clock } from "lucide-react";
 
-// Supabase Email OTP length — default is 6 digits.
-// Accepts 6–10 to handle non-default configurations.
-const OTP_LENGTH = 6;
-const OTP_RE = /^\d{6,10}$/;
+// ── Link expiry: 10 minutes ──────────────────────────────────────────────────
+const LINK_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
 
-function VerifyInner() {
+function isLinkExpired(): boolean {
+  const sentAt = window.localStorage.getItem("magicLinkSentAt");
+  if (!sentAt) return false; // no timestamp → can't verify, allow through
+  return Date.now() - Number(sentAt) > LINK_EXPIRY_MS;
+}
+
+// ── Styled email-prompt modal ─────────────────────────────────────────────────
+function EmailPromptModal({
+  onConfirm,
+  onCancel,
+}: {
+  onConfirm: (email: string) => void;
+  onCancel: () => void;
+}) {
+  const [email, setEmail] = useState("");
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div
+        className="mx-4 w-full max-w-sm rounded-2xl border border-white/10 p-7 shadow-2xl"
+        style={{ background: "var(--color-surface)" }}
+      >
+        {/* Icon */}
+        <div className="mb-5 flex flex-col items-center gap-2 text-center">
+          <div
+            className="flex h-14 w-14 items-center justify-center rounded-full"
+            style={{ background: "color-mix(in srgb, var(--color-primary) 20%, transparent)" }}
+          >
+            <MailCheck className="h-7 w-7" style={{ color: "var(--color-primary)" }} />
+          </div>
+          <h2 className="text-lg font-bold" style={{ color: "var(--color-text)" }}>
+            Confirm your email
+          </h2>
+          <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
+            It looks like you opened this link on a different device. Please re-enter your email to
+            complete sign-in.
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="confirm-email">Email address</Label>
+            <Input
+              id="confirm-email"
+              type="email"
+              inputMode="email"
+              placeholder="f23-1234@cfd.nu.edu.pk"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && email && onConfirm(email.trim().toLowerCase())}
+              autoFocus
+            />
+          </div>
+
+          <div className="flex gap-3 pt-1">
+            <Button variant="outline" className="flex-1" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button
+              className="flex-1"
+              disabled={!email}
+              onClick={() => email && onConfirm(email.trim().toLowerCase())}
+            >
+              Confirm
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main verify content ───────────────────────────────────────────────────────
+function VerifyContent() {
   const router = useRouter();
-  const params = useSearchParams();
-  const email = params.get("email") ?? "";
-  const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [redirecting, setRedirecting] = useState(false);
-  const [resending, setResending] = useState(false);
+  const [status, setStatus] = useState<"loading" | "prompt" | "error" | "expired">("loading");
   const [error, setError] = useState<string | null>(null);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
-  async function verify(codeOverride?: string) {
-    const token = (codeOverride ?? code).trim();
-    if (!/^\d{6,10}$/.test(token))
-      return setError(`Enter the ${OTP_LENGTH}-digit code from your email`);
-    setError(null);
-    setLoading(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.verifyOtp({
-      email,
-      token,
-      type: "email",
-    });
-    if (error) {
-      setLoading(false);
-      return setError(error.message);
+  useEffect(() => {
+    if (!isSignInWithEmailLink(firebaseAuth, window.location.href)) {
+      setError("Invalid magic link. Please request a new one from the login page.");
+      setStatus("error");
+      return;
     }
-    // Success — keep a full-screen loader up while the proxy resolves the role
-    // and routes to the dashboard (this hop can take a few seconds).
-    setRedirecting(true);
-    router.replace("/");
-    router.refresh();
+
+    // Check expiry
+    if (isLinkExpired()) {
+      setStatus("expired");
+      return;
+    }
+
+    const storedEmail = window.localStorage.getItem("emailForSignIn");
+    if (!storedEmail) {
+      // Different device → show styled prompt
+      setStatus("prompt");
+    } else {
+      handleSignIn(storedEmail);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleSignIn(email: string) {
+    setStatus("loading");
+    try {
+      const result = await signInWithEmailLink(firebaseAuth, email, window.location.href);
+      window.localStorage.removeItem("emailForSignIn");
+      window.localStorage.removeItem("magicLinkSentAt");
+
+      const idToken = await result.user.getIdToken();
+      const res = await fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+
+      if (!res.ok) throw new Error("Failed to create secure session");
+      
+      const { needsRegistration } = await res.json();
+
+      router.replace(needsRegistration ? "/register" : "/");
+    } catch (err: unknown) {
+      console.error("Link verify error:", err);
+      const e = err as { code?: string; message?: string };
+      if (e.code === "auth/invalid-action-code" || e.code === "auth/expired-action-code") {
+        setStatus("expired");
+      } else {
+        setError(`Error [${e.code ?? "unknown"}]: ${e.message ?? "Could not verify your link. Please request a new one."}`);
+        setStatus("error");
+      }
+    }
   }
 
-  if (redirecting) {
+  // ── Expired ─────────────────────────────────────────────────────────────────
+  if (status === "expired") {
     return (
       <Card>
-        <CardBody className="flex flex-col items-center gap-4 p-12 text-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="" className="h-20 w-20 rounded-2xl object-contain" />
-          <span className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="font-semibold text-text">Signing you in…</p>
-          <p className="text-sm text-text-muted">Setting up your dashboard.</p>
+        <CardBody className="p-8 text-center flex flex-col items-center gap-4">
+          <div
+            className="flex h-14 w-14 items-center justify-center rounded-full"
+            style={{ background: "color-mix(in srgb, var(--color-warning, #f59e0b) 20%, transparent)" }}
+          >
+            <Clock className="h-7 w-7" style={{ color: "var(--color-warning, #f59e0b)" }} />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold mb-1" style={{ color: "var(--color-text)" }}>
+              Link Expired
+            </h2>
+            <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
+              This magic link has expired for your security. Please request a fresh one.
+            </p>
+          </div>
+          <Button onClick={() => router.replace("/login")}>Back to Login</Button>
         </CardBody>
       </Card>
     );
   }
 
-  async function resend() {
-    setResending(true);
-    await createClient().auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
-    setResending(false);
+  // ── Error ────────────────────────────────────────────────────────────────────
+  if (status === "error") {
+    return (
+      <Card>
+        <CardBody className="p-8 text-center flex flex-col items-center gap-4">
+          <div
+            className="flex h-14 w-14 items-center justify-center rounded-full"
+            style={{ background: "color-mix(in srgb, var(--color-error) 20%, transparent)" }}
+          >
+            <ShieldAlert className="h-7 w-7 text-error" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold mb-1" style={{ color: "var(--color-text)" }}>
+              Sign-in Failed
+            </h2>
+            <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
+              {error}
+            </p>
+          </div>
+          <Button onClick={() => router.replace("/login")}>Back to Login</Button>
+        </CardBody>
+      </Card>
+    );
   }
 
+  // ── Email prompt (different device) ─────────────────────────────────────────
+  if (status === "prompt" && pendingEmail === null) {
+    return (
+      <>
+        {/* Background loading card */}
+        <Card>
+          <CardBody className="p-10 text-center flex flex-col items-center justify-center">
+            <Loader2 className="w-8 h-8 animate-spin mb-4" style={{ color: "var(--color-primary)" }} />
+            <h2 className="text-xl font-bold" style={{ color: "var(--color-text)" }}>
+              Verifying your link...
+            </h2>
+            <p className="text-sm mt-2" style={{ color: "var(--color-text-muted)" }}>
+              Please wait, logging you in.
+            </p>
+          </CardBody>
+        </Card>
+        <EmailPromptModal
+          onConfirm={(email) => {
+            setPendingEmail(email);
+            handleSignIn(email);
+          }}
+          onCancel={() => {
+            setError("Sign-in cancelled. Please request a new magic link.");
+            setStatus("error");
+          }}
+        />
+      </>
+    );
+  }
+
+  // ── Loading ──────────────────────────────────────────────────────────────────
   return (
     <Card>
-      <CardBody className="p-7 text-center relative">
-        <button 
-          onClick={() => router.replace("/login")}
-          className="absolute left-3 top-3 p-2 hover:bg-bg-muted rounded-full transition-colors text-text-muted hover:text-text"
-          title="Go back / Change email"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div className="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-2xl bg-primary-soft text-3xl">
-          ✉️
-        </div>
-        <h1 className="text-xl font-extrabold text-text">Verify your email</h1>
-        <p className="mt-1 text-sm text-text-muted">
-          Click the sign-in link we emailed to
+      <CardBody className="p-10 text-center flex flex-col items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin mb-4" style={{ color: "var(--color-primary)" }} />
+        <h2 className="text-xl font-bold" style={{ color: "var(--color-text)" }}>
+          Verifying your link...
+        </h2>
+        <p className="text-sm mt-2" style={{ color: "var(--color-text-muted)" }}>
+          Please wait, logging you in.
         </p>
-        <p className="text-sm font-semibold text-primary">{email}</p>
-        <p className="mt-2 text-xs text-text-faint">
-          Open the email in this same browser and tap the link. If your email
-          shows a code instead, enter it below.
-        </p>
-
-        <Input
-          className="mt-5 text-center text-2xl tracking-[0.4em]"
-          inputMode="numeric"
-          maxLength={10}
-          value={code}
-          onChange={(e) => {
-            const v = e.target.value.replace(/\D/g, "").slice(0, 10);
-            setCode(v);
-            setError(null);
-            if (OTP_RE.test(v)) setTimeout(() => verify(v), 50);
-          }}
-          placeholder={"•".repeat(OTP_LENGTH)}
-        />
-
-        {error && <p className="mt-3 text-sm text-error">{error}</p>}
-
-        <Button className="mt-5 w-full" size="lg" loading={loading} onClick={() => verify()}>
-          Verify &amp; continue
-        </Button>
-        <button
-          className="mt-4 text-sm text-primary disabled:opacity-50"
-          disabled={resending}
-          onClick={resend}
-        >
-          {resending ? "Resending…" : "Resend code"}
-        </button>
       </CardBody>
     </Card>
   );
@@ -122,8 +243,8 @@ function VerifyInner() {
 
 export default function VerifyPage() {
   return (
-    <Suspense fallback={null}>
-      <VerifyInner />
+    <Suspense fallback={<div className="p-8 text-center" style={{ color: "var(--color-text-muted)" }}>Loading...</div>}>
+      <VerifyContent />
     </Suspense>
   );
 }

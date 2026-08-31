@@ -1,104 +1,37 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import type { Role } from "@/lib/domain/constants";
 
-// Next.js 16 "Proxy" (formerly Middleware). Refreshes the Supabase session on
-// every request and applies an OPTIMISTIC RBAC redirect. The database RLS is
-// the real security gate — this only steers navigation.
+// Next.js 16 "Proxy" (formerly Middleware). 
+// For Firebase, this acts as a lightweight gate. It only checks for the presence 
+// of the session cookie. Strict RBAC (role validation) is handled by the 
+// server components (layouts and pages) via the Firebase Admin SDK.
 
-const AUTH_PATHS = ["/login", "/register", "/verify", "/auth"];
-
-function homeFor(role: Role | null): string {
-  if (role === "admin") return "/admin";
-  if (role === "manager") return "/manager";
-  return "/";
-}
+const AUTH_PATHS = ["/login", "/register", "/verify"];
 
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value),
-          );
-          response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
-          );
-        },
-      },
-    },
-  );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const sessionCookie = request.cookies.get("firebase_session");
   const path = request.nextUrl.pathname;
   const isAuthPath = AUTH_PATHS.some((p) => path.startsWith(p));
 
-  // Unauthenticated → only auth pages allowed.
-  if (!user) {
-    if (path.startsWith("/api")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (isAuthPath) return response;
+  // Allow API routes to handle their own auth
+  if (path.startsWith("/api")) {
+    return NextResponse.next();
+  }
+
+  // Unauthenticated user
+  if (!sessionCookie) {
+    if (isAuthPath) return NextResponse.next();
     return redirect(request, "/login");
   }
 
-  // Authenticated: resolve role/profile (self-select allowed by RLS).
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, is_active")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  // No profile row yet → must complete registration.
-  if (!profile) {
-    if (path.startsWith("/api")) {
-      return NextResponse.json({ error: "Profile incomplete" }, { status: 403 });
-    }
-    return path === "/register" ? response : redirect(request, "/register");
-  }
-  // Deactivated account → end the session for real. signOut()'s cleared cookies
-  // don't survive onto a fresh redirect response, so clear them explicitly.
-  if (profile.is_active === false) {
-    if (path.startsWith("/api")) {
-      return NextResponse.json({ error: "Account deactivated" }, { status: 403 });
-    }
-    const res = redirect(request, "/login?reason=deactivated");
-    for (const c of request.cookies.getAll()) {
-      if (c.name.startsWith("sb-") && c.name.includes("-auth-token")) {
-        res.cookies.set(c.name, "", { maxAge: 0, path: "/" });
-      }
-    }
-    return res;
+  // Authenticated user trying to access login/verify
+  // We allow /register because authenticated users MUST visit /register if they have no profile!
+  if ((path.startsWith("/login") || path.startsWith("/verify")) && sessionCookie) {
+    return redirect(request, "/");
   }
 
-  if (path.startsWith("/api")) return response;
-
-  const role = profile.role as Role;
-  const home = homeFor(role);
-
-  // Bounce away from auth pages once logged in.
-  if (isAuthPath) return redirect(request, home);
-
-  // Section guards.
-  if (path.startsWith("/admin") && role !== "admin") return redirect(request, home);
-  if (path.startsWith("/manager") && role !== "manager") return redirect(request, home);
-  // Customer (shop) area is everything else; keep staff out of it.
-  const inStaffArea = path.startsWith("/admin") || path.startsWith("/manager");
-  if (!inStaffArea && role !== "customer") return redirect(request, home);
-
-  return response;
+  // Let them pass. The Server Components (e.g. app/(admin)/layout.tsx) will 
+  // do the strict Firebase Admin verification and redirect if they lack permissions.
+  return NextResponse.next();
 }
 
 function redirect(request: NextRequest, to: string) {

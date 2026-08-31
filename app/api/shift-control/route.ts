@@ -1,24 +1,19 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { adminDb } from "@/lib/firebase/admin";
+import { currentUser } from "@/lib/db/server-helpers";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await currentUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle();
+    const profileDoc = await adminDb.collection("profiles").doc(user.id).get();
+    const profile = profileDoc.data();
 
     if (!profile || profile.role !== "admin") {
       return NextResponse.json({ error: "Forbidden - Admin role required" }, { status: 403 });
@@ -30,12 +25,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "campusId required" }, { status: 400 });
     }
 
-    const { error } = await supabase
-      .from("campuses")
-      .update({ manager_shift_control_enabled: Boolean(enabled) })
-      .eq("id", campusId);
-
-    if (error) throw error;
+    await adminDb.collection("campuses").doc(campusId).update({
+      manager_shift_control_enabled: Boolean(enabled)
+    });
 
     return NextResponse.json({ success: true, enabled });
   } catch (e: any) {

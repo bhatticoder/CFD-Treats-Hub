@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { firebaseAuth, firebaseDb } from "@/lib/firebase/config";
+import { collection, getDocs, doc, setDoc, query, where } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Card, CardBody } from "@/components/ui/card";
@@ -25,94 +25,95 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Get the current user from Firebase Auth
+    const unsubscribe = firebaseAuth.onAuthStateChanged((user) => {
+      if (user) {
+        setEmail(user.email || "");
+      } else {
+        router.replace("/login");
+      }
+    });
+
     (async () => {
-      const supabase = createClient();
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) return router.replace("/login");
-      setEmail(userData.user.email ?? "");
-      const { data } = await supabase
-        .from("campuses")
-        .select("*")
-        .eq("is_active", true)
-        .order("name");
-      setCampuses((data as Campus[]) ?? []);
+      try {
+        const q = query(collection(firebaseDb, "campuses"), where("is_active", "==", true));
+        const snapshot = await getDocs(q);
+        const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Campus[];
+        data.sort((a, b) => a.name.localeCompare(b.name));
+        setCampuses(data);
+      } catch (err) {
+        console.error("Failed to load campuses", err);
+      }
     })();
+
+    return () => unsubscribe();
   }, [router]);
-
-  // Allow user to see all campuses. Validation handles domains.
-
-  async function handleBack() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.replace("/login");
-  }
 
   async function submit() {
     setError(null);
-    const pErr = validatePhone(phone);
     if (!name.trim()) return setError("Enter your full name");
+    
+    const pErr = validatePhone(phone);
     if (pErr) return setError(pErr);
     if (!gender) return setError("Select your gender");
+    
     const selectedCampus = campuses.find((c) => c.id === campusId);
-    if (selectedCampus?.domain_suffix && !email.toLowerCase().endsWith(selectedCampus.domain_suffix.toLowerCase())) {
-      if (email.toLowerCase().endsWith("@cfd.nu.edu.pk")) {
-        // Allow valid cfd.nu.edu.pk email to pass
-      } else {
-        return setError("Email must end with @cfd.nu.edu.pk");
+    if (!selectedCampus) return setError("Select a campus");
+
+    if (selectedCampus.domain_suffix && !email.toLowerCase().endsWith(selectedCampus.domain_suffix.toLowerCase())) {
+      if (!email.toLowerCase().endsWith("@cfd.nu.edu.pk")) {
+        return setError(`Email must end with ${selectedCampus.domain_suffix}`);
       }
     }
+    
     const rErr = validateRoom(room);
     if (rErr) return setError(rErr);
 
     setLoading(true);
-    const supabase = createClient();
-    const { data: userData } = await supabase.auth.getUser();
-    const uid = userData.user?.id;
-    if (!uid) {
-      setLoading(false);
-      return router.replace("/login");
-    }
-    const effectiveCampusId = campusId;
-    
-    const isGirlsCampus = selectedCampus?.gender === "Female";
-    
-    // Dynamic block resolution based on halls
+
     let finalBlock = block;
     if (selectedCampus?.halls && selectedCampus.halls.length === 1) {
       finalBlock = selectedCampus.halls[0];
     } else if (!finalBlock) {
-      finalBlock = "Main"; // fallback
+      finalBlock = "Main";
     }
 
-    const { error } = await supabase.from("profiles").insert({
-      id: uid,
-      email,
-      full_name: name.trim(),
-      phone: phone.trim(),
-      gender,
-      campus_id: effectiveCampusId,
-      block: finalBlock,
-      room_number: room.trim(),
-      role: "customer",
-      is_active: true,
-    });
-    setLoading(false);
-    if (error) return setError(error.message);
-    router.replace("/");
-    router.refresh();
+    try {
+      const user = firebaseAuth.currentUser;
+      if (!user) {
+        throw new Error("No authenticated user found. Please login again.");
+      }
+
+      // Create Firestore Profile
+      await setDoc(doc(firebaseDb, "profiles", user.uid), {
+        id: user.uid,
+        email: email.trim().toLowerCase(),
+        full_name: name.trim(),
+        phone: phone.trim(),
+        gender,
+        campus_id: campusId,
+        block: finalBlock,
+        room_number: room.trim(),
+        role: "customer",
+        is_active: true,
+        created_at: new Date().toISOString()
+      });
+
+      router.replace("/");
+      router.refresh();
+      
+    } catch (err: unknown) {
+      console.error("Registration error:", err);
+      const errorObj = err as { message: string };
+      setError(errorObj.message || "Failed to complete registration.");
+      setLoading(false);
+    }
   }
 
   return (
     <Card>
       <CardBody className="p-7">
         <div className="flex items-start gap-3 mb-4">
-          <button 
-            onClick={handleBack} 
-            className="p-1 mt-0.5 -ml-2 hover:bg-bg-muted rounded-full transition-colors text-text-muted hover:text-text shrink-0"
-            title="Go back / Change email"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
           <div>
             <h1 className="text-xl font-extrabold text-text leading-tight">Complete your profile</h1>
             <p className="text-sm text-text-muted mt-0.5">{email}</p>
@@ -122,7 +123,7 @@ export default function RegisterPage() {
         <div className="space-y-3">
           <div>
             <Label>Full name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="John Doe" />
           </div>
           <div>
             <Label>Phone</Label>
@@ -196,7 +197,7 @@ export default function RegisterPage() {
         {error && <p className="mt-3 text-sm text-error">{error}</p>}
 
         <Button className="mt-5 w-full" size="lg" loading={loading} onClick={submit}>
-          Create account
+          Complete Profile
         </Button>
       </CardBody>
     </Card>
