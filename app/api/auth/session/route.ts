@@ -88,11 +88,16 @@ export async function POST(request: NextRequest) {
   const { uid, email } = decodedToken;
   let needsRegistration = true;
 
-  if (email) {
-    try {
-      const db = getAdminDb();
-      const profiles = db.collection("profiles");
+  try {
+    const db = getAdminDb();
+    const profiles = db.collection("profiles");
 
+    // First check directly by uid
+    const directDoc = await profiles.doc(uid).get();
+    if (directDoc.exists) {
+      needsRegistration = false;
+    } else if (email) {
+      // Secondary check by email query
       const snapshot = await profiles
         .where("email", "==", email.toLowerCase())
         .get();
@@ -110,9 +115,9 @@ export async function POST(request: NextRequest) {
           await existingDoc.ref.delete();
         }
       }
-    } catch (error) {
-      logFirebaseError("profile_lookup_or_migration", error);
     }
+  } catch (error) {
+    logFirebaseError("profile_lookup_or_migration", error);
   }
 
   let sessionCookie: string;

@@ -13,12 +13,13 @@ export const currentUser = cache(async () => {
   if (!sessionCookie) return null;
 
   try {
-    const decodedClaims = await getAdminAuth().verifySessionCookie(sessionCookie, true);
+    const decodedClaims = await getAdminAuth().verifySessionCookie(sessionCookie, false);
     return {
       id: decodedClaims.uid,
       email: decodedClaims.email,
     };
   } catch (error) {
+    console.error("[currentUser] Session cookie verification failed:", error);
     return null;
   }
 });

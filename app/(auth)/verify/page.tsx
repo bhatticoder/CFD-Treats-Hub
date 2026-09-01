@@ -194,6 +194,7 @@ function VerifyContent() {
         body?.needsRegistration ?? additionalUserInfo?.isNewUser ?? false;
 
       router.replace(needsRegistration ? "/register" : "/");
+      router.refresh();
     } catch (err: unknown) {
       console.error("[v0] Link verification failed", {
         code: typeof err === "object" && err && "code" in err ? err.code : undefined,

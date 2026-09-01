@@ -23,9 +23,10 @@ export async function proxy(request: NextRequest) {
     return redirect(request, "/login");
   }
 
-  // Authenticated user trying to access login/verify
+  // Authenticated user trying to access login
   // We allow /register because authenticated users MUST visit /register if they have no profile!
-  if ((path.startsWith("/login") || path.startsWith("/verify")) && sessionCookie) {
+  // We allow /verify because magic links must always be processed by the verify page!
+  if (path.startsWith("/login") && sessionCookie) {
     return redirect(request, "/");
   }
 

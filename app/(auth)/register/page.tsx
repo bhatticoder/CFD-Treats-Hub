@@ -29,8 +29,6 @@ export default function RegisterPage() {
     const unsubscribe = firebaseAuth.onAuthStateChanged((user) => {
       if (user) {
         setEmail(user.email || "");
-      } else {
-        router.replace("/login");
       }
     });
 
