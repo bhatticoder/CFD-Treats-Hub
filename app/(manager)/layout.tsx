@@ -1,21 +1,21 @@
-import { redirect } from "next/navigation";
 import { ManagerShell } from "@/components/manager-shell";
-import { myCampus, myProfile } from "@/lib/db/server-helpers";
 
-export default async function ManagerRootLayout({
+const demoCampus = {
+  name: "Boys Hostel",
+  logo_url: null,
+  theme_color: null,
+};
+
+export default function ManagerRootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const profile = await myProfile();
-  
-  if (!profile || profile.role !== "manager") {
-    redirect("/");
-  }
-
-  const campus = await myCampus();
   return (
-    <ManagerShell logoUrl={campus?.logo_url} themeColor={campus?.theme_color}>
+    <ManagerShell
+      logoUrl={demoCampus.logo_url}
+      themeColor={demoCampus.theme_color}
+    >
       {children}
     </ManagerShell>
   );

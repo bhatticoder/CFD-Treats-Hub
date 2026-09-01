@@ -1,28 +1,92 @@
-import { createClient } from "@/lib/supabase/server";
-import { myProfileWithCampus } from "@/lib/db/server-helpers";
+"use client";
+
 import { ManagerOrders } from "@/components/manager-orders";
 import type { Order } from "@/lib/types/models";
 
-export const dynamic = "force-dynamic";
+const DEMO_ORDERS: Order[] = [
+  {
+    id: "demo-order-1",
+    order_number: "CFD-BOY-1042",
+    customer_id: "demo-customer-1",
+    campus_id: "boys-hostel",
+    room_number: "B-214",
+    block: "Block B",
+    payment_method: "cod",
+    payment_screenshot_url: null,
+    payment_status: "pending",
+    order_status: "preparing",
+    subtotal: 540,
+    delivery_fee: 40,
+    platform_fee: 15,
+    cod_fee: 10,
+    gst: 0,
+    discount_amount: 0,
+    total: 605,
+    promo_code: null,
+    additional_note: "Please call before delivery",
+    rating: null,
+    is_preorder: false,
+    created_at: new Date().toISOString(),
+    delivered_at: null,
+    profiles: { full_name: "Muhammad Hamza", phone: "0300 1234567" },
+    order_items: [],
+  },
+  {
+    id: "demo-order-2",
+    order_number: "CFD-BOY-1041",
+    customer_id: "demo-customer-2",
+    campus_id: "boys-hostel",
+    room_number: "A-108",
+    block: "Block A",
+    payment_method: "online",
+    payment_screenshot_url: null,
+    payment_status: "paid",
+    order_status: "out_for_delivery",
+    subtotal: 720,
+    delivery_fee: 40,
+    platform_fee: 15,
+    cod_fee: 0,
+    gst: 0,
+    discount_amount: 50,
+    total: 725,
+    promo_code: "WELCOME50",
+    additional_note: null,
+    rating: null,
+    is_preorder: false,
+    created_at: new Date(Date.now() - 18 * 60 * 1000).toISOString(),
+    delivered_at: null,
+    profiles: { full_name: "Ali Raza", phone: "0312 9876543" },
+    order_items: [],
+  },
+  {
+    id: "demo-order-3",
+    order_number: "CFD-BOY-1040",
+    customer_id: "demo-customer-3",
+    campus_id: "boys-hostel",
+    room_number: "C-302",
+    block: "Block C",
+    payment_method: "online",
+    payment_screenshot_url: null,
+    payment_status: "paid",
+    order_status: "delivered",
+    subtotal: 390,
+    delivery_fee: 40,
+    platform_fee: 15,
+    cod_fee: 0,
+    gst: 0,
+    discount_amount: 0,
+    total: 445,
+    promo_code: null,
+    additional_note: null,
+    rating: 5,
+    is_preorder: false,
+    created_at: new Date(Date.now() - 52 * 60 * 1000).toISOString(),
+    delivered_at: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
+    profiles: { full_name: "Usman Khan", phone: "0333 4567890" },
+    order_items: [],
+  },
+];
 
-export default async function ManagerOrdersPage() {
-  const supabase = await createClient();
-  const profileWithCampus = await myProfileWithCampus();
-  const campus = profileWithCampus?.campus ?? null;
-  const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-
-  let query = supabase
-    .from("orders")
-    .select("*, order_items(*)")
-    .gte("created_at", startOfDay)
-    .order("created_at", { ascending: false });
-
-  if (campus?.id) {
-    query = query.eq("campus_id", campus.id);
-  }
-
-  const { data } = await query;
-
-  return <ManagerOrders orders={(data as Order[]) ?? []} campus={campus} />;
+export default function DummyManagerPage() {
+  return <ManagerOrders orders={DEMO_ORDERS} campus={null} />;
 }

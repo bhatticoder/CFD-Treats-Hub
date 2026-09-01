@@ -12,11 +12,12 @@ export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isAuthPath = AUTH_PATHS.some((p) => path.startsWith(p));
   const isAdminPreviewPath = path === "/admin" || path.startsWith("/admin/");
+  const isManagerPreviewPath = path === "/manager" || path.startsWith("/manager/");
 
-  // Temporary UI preview: allow the admin screens to render while the
-  // database/auth records are being rebuilt. Admin APIs still authenticate
+  // Temporary UI preview: allow admin and manager screens to render while the
+  // database/auth records are being rebuilt. Their APIs still authenticate
   // independently, so this is for viewing/copying the UI only.
-  if (isAdminPreviewPath) return NextResponse.next();
+  if (isAdminPreviewPath || isManagerPreviewPath) return NextResponse.next();
 
   // Allow API routes to handle their own auth
   if (path.startsWith("/api")) {
