@@ -11,6 +11,12 @@ export async function proxy(request: NextRequest) {
   const sessionCookie = request.cookies.get("firebase_session");
   const path = request.nextUrl.pathname;
   const isAuthPath = AUTH_PATHS.some((p) => path.startsWith(p));
+  const isAdminPreviewPath = path === "/admin" || path.startsWith("/admin/");
+
+  // Temporary UI preview: allow the admin screens to render while the
+  // database/auth records are being rebuilt. Admin APIs still authenticate
+  // independently, so this is for viewing/copying the UI only.
+  if (isAdminPreviewPath) return NextResponse.next();
 
   // Allow API routes to handle their own auth
   if (path.startsWith("/api")) {
