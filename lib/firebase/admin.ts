@@ -17,6 +17,8 @@ function getAdminApp(): App {
 
   const projectId = process.env.FIREBASE_PROJECT_ID?.trim();
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
+  const serviceAccountId =
+    process.env.FIREBASE_SERVICE_ACCOUNT_ID?.trim() || clientEmail;
   const privateKey = process.env.FIREBASE_PRIVATE_KEY
     ? normalizePrivateKey(process.env.FIREBASE_PRIVATE_KEY)
     : undefined;
@@ -45,9 +47,13 @@ function getAdminApp(): App {
         clientEmail,
         privateKey,
       }),
+      serviceAccountId,
     });
   } else if (projectId) {
-    app = initializeApp({ projectId });
+    app = initializeApp({
+      projectId,
+      serviceAccountId,
+    });
   } else {
     throw new Error(
       `Firebase Admin configuration is incomplete. Missing: ${missing.join(", ")}.`
