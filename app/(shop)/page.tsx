@@ -93,8 +93,8 @@ export default function MenuPage() {
       <MenuBrowser
         items={demoItems}
         categories={["Burgers", "Snacks", "Wraps", "Drinks"]}
-        shiftActive
-        preordersOpen
+        shiftActive={false}
+        preordersOpen={false}
         firstName="Ali"
         campusName="Boys Hostel"
         deliveryActive
