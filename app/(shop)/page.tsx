@@ -1,72 +1,104 @@
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import { PageContainer } from "@/components/app-shell";
 import { MenuBrowser } from "@/components/menu-browser";
-import { PushPrompt } from "@/components/push-prompt";
-import { isPreorderOpen } from "@/lib/domain/preorder";
-import type { Campus, Item, Profile } from "@/lib/types/models";
+import type { Item } from "@/lib/types/models";
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-static";
 
-export default async function MenuPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+const demoItems: Item[] = [
+  {
+    id: "demo-zinger",
+    campus_id: "boys-hostel",
+    name: "Zinger Burger",
+    description: "Crispy chicken, lettuce, cheese and house sauce.",
+    price: 420,
+    discounted_price: 380,
+    delivery_fee: 0,
+    image_url: null,
+    category: "Burgers",
+    stock_quantity: 18,
+    is_available: true,
+    custom_instruction: null,
+    tag: "POPULAR",
+    restaurant_id: "canteen",
+    expected_arrival: null,
+    is_preorder: false,
+    created_at: new Date().toISOString(),
+    restaurants: { name: "Boys Hostel Canteen" },
+  },
+  {
+    id: "demo-fries",
+    campus_id: "boys-hostel",
+    name: "Loaded Fries",
+    description: "Seasoned fries topped with cheese sauce and jalapeños.",
+    price: 250,
+    discounted_price: null,
+    delivery_fee: 0,
+    image_url: null,
+    category: "Snacks",
+    stock_quantity: 24,
+    is_available: true,
+    custom_instruction: "Extra sauce available",
+    tag: "FEW LEFT",
+    restaurant_id: "canteen",
+    expected_arrival: null,
+    is_preorder: false,
+    created_at: new Date().toISOString(),
+    restaurants: { name: "Boys Hostel Canteen" },
+  },
+  {
+    id: "demo-shawarma",
+    campus_id: "boys-hostel",
+    name: "Chicken Shawarma",
+    description: "Marinated chicken, garlic sauce and fresh salad.",
+    price: 300,
+    discounted_price: 275,
+    delivery_fee: 0,
+    image_url: null,
+    category: "Wraps",
+    stock_quantity: 12,
+    is_available: true,
+    custom_instruction: null,
+    tag: null,
+    restaurant_id: "grill",
+    expected_arrival: null,
+    is_preorder: false,
+    created_at: new Date().toISOString(),
+    restaurants: { name: "Hostel Grill" },
+  },
+  {
+    id: "demo-cola",
+    campus_id: "boys-hostel",
+    name: "Chilled Cola",
+    description: "Cold 500ml soft drink.",
+    price: 100,
+    discounted_price: null,
+    delivery_fee: 0,
+    image_url: null,
+    category: "Drinks",
+    stock_quantity: 40,
+    is_available: true,
+    custom_instruction: null,
+    tag: "COLD",
+    restaurant_id: "canteen",
+    expected_arrival: null,
+    is_preorder: false,
+    created_at: new Date().toISOString(),
+    restaurants: { name: "Boys Hostel Canteen" },
+  },
+];
 
-  if (!user) redirect("/login");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*, campuses(*)")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  const p = profile as (Profile & { campuses?: Campus | Campus[] }) | null;
-  const rawCampus = p?.campuses ?? null;
-  const campus = Array.isArray(rawCampus) ? rawCampus[0] : rawCampus;
-  const campusId = p?.campus_id;
-
-  const preordersOpen = isPreorderOpen(campus);
-
-  const { data: rawItems } = await supabase
-    .from("items")
-    .select("*, restaurants(name, is_active)")
-    .eq("campus_id", campusId ?? "")
-    .eq("is_preorder", false)
-    .order("category")
-    .order("name");
-
-  // Fetch all categories globally so admins don't have to recreate them per campus
-  const { data: rawCategories } = await supabase
-    .from("item_categories")
-    .select("name")
-    .order("name");
-  
-  const allCategories = rawCategories ? rawCategories.map((c: any) => c.name) : [];
-
-  // Filter out items belonging to hidden restaurants.
-  const items = ((rawItems as any[]) ?? []).filter(
-    (i) => !i.restaurant_id || i.restaurants?.is_active,
-  );
-
-  // Shift is active if the campus shift_active flag is true (defaults to true if null).
-  const shiftActive = campus?.shift_active ?? true;
-
-  const firstName = p?.full_name?.split(" ")[0] ?? "there";
-
+export default function MenuPage() {
   return (
     <PageContainer>
-      <PushPrompt />
       <MenuBrowser
-        items={items}
-        categories={allCategories}
-        shiftActive={shiftActive}
-        preordersOpen={preordersOpen}
-        firstName={firstName}
-        campusName={campus?.name ?? "CFD Campus"}
-        deliveryActive={campus?.delivery_active ?? true}
-        collectionRoom={campus?.collection_room ?? null}
+        items={demoItems}
+        categories={["Burgers", "Snacks", "Wraps", "Drinks"]}
+        shiftActive
+        preordersOpen
+        firstName="Ali"
+        campusName="Boys Hostel"
+        deliveryActive
+        collectionRoom="Boys Hostel Reception"
       />
     </PageContainer>
   );

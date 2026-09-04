@@ -1,32 +1,17 @@
-import { redirect } from "next/navigation";
 import { CustomerShell } from "@/components/customer-shell";
-import { NotificationPrompt } from "@/components/notification-prompt";
-import { myCampus, myProfile } from "@/lib/db/server-helpers";
 
-export default async function ShopLayout({
+export const dynamic = "force-static";
+
+/** Temporary UI-only customer preview. Remove before production. */
+export default function ShopLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const profile = await myProfile();
-
-  if (!profile) {
-    redirect("/register");
-  }
-
-  if (profile.role === "admin") {
-    redirect("/admin");
-  }
-
-  if (profile.role === "manager") {
-    redirect("/manager");
-  }
-
-  const campus = await myCampus();
   return (
-    <CustomerShell logoUrl={campus?.logo_url} themeColor={campus?.theme_color}>
+    <CustomerShell logoUrl={null} themeColor={null}>
       {children}
-      <NotificationPrompt />
     </CustomerShell>
   );
 }
+

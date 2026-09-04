@@ -13,11 +13,25 @@ export async function proxy(request: NextRequest) {
   const isAuthPath = AUTH_PATHS.some((p) => path.startsWith(p));
   const isAdminPreviewPath = path === "/admin" || path.startsWith("/admin/");
   const isManagerPreviewPath = path === "/manager" || path.startsWith("/manager/");
+  const isCustomerPreviewPath =
+    path === "/" ||
+    path === "/cart" ||
+    path.startsWith("/cart/") ||
+    path === "/preorder" ||
+    path.startsWith("/preorder/") ||
+    path === "/orders" ||
+    path.startsWith("/orders/") ||
+    path === "/notifications" ||
+    path.startsWith("/notifications/") ||
+    path === "/profile" ||
+    path.startsWith("/profile/") ||
+    path.startsWith("/track/");
 
-  // Temporary UI preview: allow admin and manager screens to render while the
-  // database/auth records are being rebuilt. Their APIs still authenticate
-  // independently, so this is for viewing/copying the UI only.
-  if (isAdminPreviewPath || isManagerPreviewPath) return NextResponse.next();
+  // Temporary UI preview: allow all three role surfaces to render while the
+  // database/auth records are being rebuilt. APIs still authenticate normally.
+  if (isAdminPreviewPath || isManagerPreviewPath || isCustomerPreviewPath) {
+    return NextResponse.next();
+  }
 
   // Allow API routes to handle their own auth
   if (path.startsWith("/api")) {
