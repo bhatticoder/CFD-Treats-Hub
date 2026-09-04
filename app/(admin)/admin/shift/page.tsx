@@ -1,11 +1,71 @@
-import { createClient } from "@/lib/supabase/server";
 import { AdminShiftView } from "@/components/admin/admin-shift-view";
 import type { Campus } from "@/lib/types/models";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminShiftPage() {
-  const supabase = await createClient();
-  const { data } = await supabase.from("campuses").select("*").order("name");
-  return <AdminShiftView campuses={(data as Campus[]) ?? []} />;
+const dummyCampuses: Campus[] = [
+  {
+    id: "boys-hostel",
+    name: "Boys Hostel",
+    domain_suffix: "boys.cfd.nu.edu.pk",
+    gender: "Male",
+    halls: ["Block A", "Block B", "Block C"],
+    logo_url: null,
+    theme_color: "#f08a3c",
+    payment_account_info: null,
+    cod_cap_percent: 100,
+    manager_discount_enabled: true,
+    manager_shift_control_enabled: true,
+    shift_active: false,
+    is_active: true,
+    preorder_open: true,
+    preorder_opens_at: null,
+    preorder_closes_at: null,
+    whatsapp_number: "+92 300 1234567",
+    delivery_active: true,
+    collection_room: "Boys Hostel Reception",
+    regular_delivery_fee: 20,
+    regular_platform_fee: 5,
+    regular_gst: 5,
+    regular_cod_charge: 0,
+    preorder_delivery_fee: 20,
+    preorder_platform_fee: 5,
+    preorder_gst: 5,
+    preorder_cod_charge: 0,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "girls-hostel",
+    name: "Girls Hostel",
+    domain_suffix: "girls.cfd.nu.edu.pk",
+    gender: "Female",
+    halls: ["North Wing", "South Wing"],
+    logo_url: null,
+    theme_color: "#f08a3c",
+    payment_account_info: null,
+    cod_cap_percent: 100,
+    manager_discount_enabled: true,
+    manager_shift_control_enabled: false,
+    shift_active: false,
+    is_active: true,
+    preorder_open: false,
+    preorder_opens_at: null,
+    preorder_closes_at: null,
+    whatsapp_number: "+92 300 7654321",
+    delivery_active: false,
+    collection_room: "Girls Hostel Reception",
+    regular_delivery_fee: 20,
+    regular_platform_fee: 5,
+    regular_gst: 5,
+    regular_cod_charge: 0,
+    preorder_delivery_fee: 20,
+    preorder_platform_fee: 5,
+    preorder_gst: 5,
+    preorder_cod_charge: 0,
+    created_at: new Date().toISOString(),
+  },
+];
+
+export default function AdminShiftPage() {
+  return <AdminShiftView campuses={dummyCampuses} />;
 }
