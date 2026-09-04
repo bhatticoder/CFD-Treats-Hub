@@ -41,7 +41,7 @@ const DEMO_ORDERS: Order[] = [
     payment_method: "online",
     payment_screenshot_url: null,
     payment_status: "paid",
-    order_status: "out_for_delivery",
+    order_status: "on_the_way",
     subtotal: 720,
     delivery_fee: 40,
     platform_fee: 15,

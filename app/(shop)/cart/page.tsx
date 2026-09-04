@@ -31,6 +31,13 @@ export default function CartPage() {
   const [account, setAccount] = useState<string | null>(null);
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [demoOrder, setDemoOrder] = useState<{
+    number: string;
+    placedAt: string;
+  } | null>(null);
+
+  const demoPreviewMode = true;
+
 
   const [promoCode, setPromoCode] = useState("");
   const [additionalNote, setAdditionalNote] = useState("");
@@ -163,7 +170,17 @@ export default function CartPage() {
       return setError("Please upload your payment screenshot");
     }
     setPlacing(true);
-    
+
+    if (demoPreviewMode) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      setDemoOrder({
+        number: `ORD-DEMO-${Math.floor(1000 + Math.random() * 9000)}`,
+        placedAt: new Date().toISOString(),
+      });
+      setPlacing(false);
+      return;
+    }
+
     try {
       let screenshotUrl: string | null = null;
       if (method === "online" && file) {
@@ -230,6 +247,70 @@ export default function CartPage() {
     }
   }
 
+  if (demoOrder) {
+    return (
+      <PageContainer max="max-w-3xl">
+        <div className="mx-auto flex max-w-2xl flex-col gap-5">
+          <Card className="overflow-hidden border-success/30">
+            <CardBody className="flex flex-col items-center gap-4 px-6 py-10 text-center">
+              <div className="grid size-20 place-items-center rounded-full bg-success/15 text-success">
+                <PartyPopper className="size-10" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-success">Order confirmed</p>
+                <h1 className="text-3xl font-extrabold text-text">Your treats are on the way</h1>
+                <p className="text-text-muted">This is a preview confirmation for the Boys Hostel campus.</p>
+              </div>
+              <div className="w-full rounded-2xl border border-border bg-bg-muted p-4 text-left">
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-sm text-text-muted">Order number</span>
+                  <span className="font-bold text-primary">{demoOrder.number}</span>
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-4">
+                  <span className="text-sm text-text-muted">Placed</span>
+                  <span className="text-sm font-medium text-text">{new Date(demoOrder.placedAt).toLocaleString()}</span>
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-4">
+                  <span className="text-sm text-text-muted">Delivery</span>
+                  <span className="text-sm font-medium text-text">Room {room || "204"}, {block || "Block A"}</span>
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-4">
+                  <span className="text-sm text-text-muted">Payment</span>
+                  <span className="text-sm font-medium text-success">{method === "cod" ? "Cash on delivery" : "Payment under review"}</span>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardBody className="flex flex-col gap-4">
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="text-lg font-bold text-text">Order summary</h2>
+                <span className="font-extrabold text-success">{money(totals.grandTotal)}</span>
+              </div>
+              <div className="flex flex-col gap-3">
+                {lines.map((line) => (
+                  <div key={line.item.id} className="flex items-center justify-between gap-4 text-sm">
+                    <span className="text-text-muted">{line.quantity} × {line.item.name}</span>
+                    <span className="font-medium text-text">{money(effectivePrice(line) * line.quantity)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t border-border pt-4 text-sm text-text-muted">
+                The manager will update this order as it is prepared and delivered.
+              </div>
+            </CardBody>
+          </Card>
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button className="flex-1" onClick={() => router.push("/orders")}>View my orders</Button>
+            <Button className="flex-1" variant="outline" onClick={() => router.push("/")}>Continue shopping</Button>
+          </div>
+        </div>
+      </PageContainer>
+    );
+  }
+
   if (lines.length === 0) {
     return (
       <PageContainer max="max-w-3xl">
@@ -238,14 +319,26 @@ export default function CartPage() {
           title="Your cart is empty"
           hint="Add some treats from the menu!"
         />
-        <div className="text-center">
+        <div className="flex flex-col items-center gap-3 text-center">
           <Button onClick={() => router.push("/")}>Browse menu</Button>
+          <Button
+            variant="outline"
+            onClick={() =>
+              setDemoOrder({
+                number: "ORD-DEMO-4821",
+                placedAt: new Date().toISOString(),
+              })
+            }
+          >
+            Preview order confirmation
+          </Button>
         </div>
       </PageContainer>
     );
   }
 
   return (
+
     <PageContainer max="max-w-3xl">
       <h1 className="mb-4 text-2xl font-extrabold text-text">Your Cart</h1>
 
