@@ -27,31 +27,26 @@ export async function proxy(request: NextRequest) {
     path.startsWith("/profile/") ||
     path.startsWith("/track/");
 
-  // Temporary UI preview: allow all three role surfaces to render while the
-  // database/auth records are being rebuilt. APIs still authenticate normally.
-  if (isAdminPreviewPath || isManagerPreviewPath || isCustomerPreviewPath) {
-    return NextResponse.next();
+  // Temporary UI-only mode: the database is being rebuilt, so all role
+  // surfaces are public for screenshots and manual UI review. Authentication
+  // pages are intentionally bypassed and redirect to the customer surface.
+  if (isAuthPath) {
+    return redirect(request, "/");
   }
 
-  // Allow API routes to handle their own auth
+  // APIs remain available to their own handlers. The preview pages use dummy
+  // data and do not require a Firebase session cookie.
   if (path.startsWith("/api")) {
     return NextResponse.next();
   }
 
-  // Unauthenticated user
-  if (!sessionCookie) {
-    if (isAuthPath) return NextResponse.next();
-    return redirect(request, "/login");
+  // Allow the customer, manager, admin, and any supporting UI routes without
+  // invoking the login flow. This is temporary and must be removed before
+  // production because it disables route-level authentication.
+  if (sessionCookie || isAdminPreviewPath || isManagerPreviewPath || isCustomerPreviewPath) {
+    return NextResponse.next();
   }
 
-  // Authenticated user trying to access login/verify
-  // We allow /register because authenticated users MUST visit /register if they have no profile!
-  if ((path.startsWith("/login") || path.startsWith("/verify")) && sessionCookie) {
-    return redirect(request, "/");
-  }
-
-  // Let them pass. The Server Components (e.g. app/(admin)/layout.tsx) will 
-  // do the strict Firebase Admin verification and redirect if they lack permissions.
   return NextResponse.next();
 }
 
