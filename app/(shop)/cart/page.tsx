@@ -257,9 +257,9 @@ export default function CartPage() {
                 <PartyPopper className="size-10" />
               </div>
               <div className="flex flex-col gap-2">
-                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-success">Order confirmed</p>
-                <h1 className="text-3xl font-extrabold text-text">Your treats are on the way</h1>
-                <p className="text-text-muted">This is a preview confirmation for the Boys Hostel campus.</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">Order placed</p>
+                <h1 className="text-3xl font-extrabold text-text">Waiting for manager confirmation</h1>
+                <p className="text-text-muted">Your order is in the queue for the Boys Hostel campus.</p>
               </div>
               <div className="w-full rounded-2xl border border-border bg-bg-muted p-4 text-left">
                 <div className="flex items-center justify-between gap-4">
@@ -278,6 +278,35 @@ export default function CartPage() {
                   <span className="text-sm text-text-muted">Payment</span>
                   <span className="text-sm font-medium text-success">{method === "cod" ? "Cash on delivery" : "Payment under review"}</span>
                 </div>
+              </div>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardBody className="flex flex-col gap-4">
+              <div className="flex items-center gap-4">
+                <div className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
+                  <span className="size-3 animate-pulse rounded-full bg-primary" />
+                </div>
+                <div>
+                  <p className="font-bold text-text">Waiting for manager</p>
+                  <p className="text-sm text-text-muted">The Boys Hostel manager will review your order shortly.</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary-soft/30 px-4 py-3 text-sm text-text-muted">
+                <span className="size-2 rounded-full bg-success" />
+                Order received
+                <span className="ml-auto font-semibold text-success">Done</span>
+              </div>
+              <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary-soft/30 px-4 py-3 text-sm text-text-muted">
+                <span className="size-2 animate-pulse rounded-full bg-primary" />
+                Manager confirmation
+                <span className="ml-auto font-semibold text-primary">Waiting</span>
+              </div>
+              <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-sm text-text-faint">
+                <span className="size-2 rounded-full bg-border" />
+                Preparation and delivery
+                <span className="ml-auto">Pending</span>
               </div>
             </CardBody>
           </Card>
