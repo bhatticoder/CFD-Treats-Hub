@@ -113,6 +113,24 @@ export function AdminShiftView({ campuses: initialCampuses }: { campuses: Campus
 
       {error && <p className="mb-4 rounded-xl bg-error/10 p-3 text-sm text-error">{error}</p>}
 
+      {!allOpen && (
+        <div className="mb-5 rounded-2xl border border-warning/30 bg-warning/10 p-5" role="status">
+          <div className="flex items-center gap-3">
+            <div className="grid size-10 shrink-0 place-items-center rounded-full bg-warning/20 text-warning">
+              <Power className="h-5 w-5" aria-hidden="true" />
+            </div>
+            <div>
+              <p className="font-extrabold uppercase tracking-wide text-warning">
+                ALL FINISHED FOR TODAY
+              </p>
+              <p className="mt-1 text-sm text-text-muted">
+                Ordering is closed for one or more campuses. Turn on a shift to reopen ordering.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-3">
         {campuses.map((c) => (
           <Card key={c.id}>
